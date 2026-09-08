@@ -1,6 +1,8 @@
+diff --git a/shell/Ui/PluginBarApi.qml b/shell/Ui/PluginBarApi.qml
+index 03c748b..58d8b95 100644
 --- a/shell/Ui/PluginBarApi.qml
 +++ b/shell/Ui/PluginBarApi.qml
-@@ -39,6 +39,14 @@
+@@ -39,6 +39,14 @@ QtObject {
    property var _targetBelongsToWindow: null
    property var _moduleWidgets: null
    property var _run: null
@@ -15,9 +17,11 @@
    property var _setCenterHoverRevealSuppressed: null
  
    function setCenterHoverRevealSuppressed(value) {
+diff --git a/shell/plugins/bar/Bar.qml b/shell/plugins/bar/Bar.qml
+index be9fece..12c9868 100644
 --- a/shell/plugins/bar/Bar.qml
 +++ b/shell/plugins/bar/Bar.qml
-@@ -111,6 +111,102 @@
+@@ -111,6 +111,102 @@ Item {
    property var moduleSlots: []
    property var pluginBarApis: ({})
    property var pluginObjectOwners: []
@@ -120,7 +124,7 @@
  
    Component {
      id: pluginBarApiComponent
-@@ -123,6 +219,7 @@
+@@ -123,6 +219,7 @@ Item {
  
    function bindPluginBarApi(api) {
      if (!api) return
@@ -128,7 +132,7 @@
      api.foreground = Qt.binding(function() { return root.foreground })
      api.barForeground = Qt.binding(function() { return root.barForeground })
      api.background = Qt.binding(function() { return root.background })
-@@ -264,6 +361,7 @@
+@@ -264,6 +361,7 @@ Item {
            ? root.moduleWidgets(moduleName) : []
        },
        _run: function(command) { root.run(command) },
@@ -136,7 +140,7 @@
        _setCenterHoverRevealSuppressed: function(value) {
          root.centerHoverRevealSuppressed = !!value
        }
-@@ -447,7 +545,7 @@
+@@ -447,7 +545,7 @@ Item {
  
      try {
        var slotPoint = slot.mapToItem(null, 0, 0)
@@ -145,7 +149,7 @@
        var thickness = Style.spacing.xs
        if (vertical) {
          return {
-@@ -593,10 +691,12 @@
+@@ -593,10 +691,12 @@ Item {
      var delta = BarModel.inlineSettingsDelta(layoutConfig, next)
      if (delta) {
        applySettingsDelta(delta)
@@ -158,7 +162,7 @@
    }
  
    function applySettingsDelta(delta) {
-@@ -606,7 +706,8 @@
+@@ -606,7 +706,8 @@ Item {
        var settings = entrySettings(change.entry)
        for (var s = 0; s < moduleSlots.length; s++) {
          var slot = moduleSlots[s]
@@ -168,7 +172,7 @@
          var item = slot.activeItem
          if (item && "settings" in item) item.settings = settings
        }
-@@ -912,39 +1013,23 @@
+@@ -912,39 +1013,23 @@ Item {
  
    function moduleDropAtScene(scenePoint, sourceSlot) {
      var sourceWindow = root.slotWindow(sourceSlot) || root.barDragWindow
@@ -202,14 +206,13 @@
 -        width: slot.width,
 -        height: slot.height
 -      })
--    }
--
--    return BarModel.nearestDropTarget(candidates, scenePoint, root.vertical)
 +      if (!slot || slot === sourceSlot || slot.region === "drawer" || !slot.visible || slot.width <= 0 || slot.height <= 0) continue
 +      if (!root.sameWindow(root.slotWindow(slot), targetWindow)) continue
 +      var slotPoint = slot.mapToItem(null, 0, 0)
 +      candidates.push({ slot: slot, x: slotPoint.x, y: slotPoint.y, width: slot.width, height: slot.height })
-+    }
+     }
+-
+-    return BarModel.nearestDropTarget(candidates, scenePoint, root.vertical)
 +    return BarModel.nearestDropTarget(candidates, point, root.vertical)
    }
  
@@ -219,7 +222,7 @@
      for (var i = 0; i < moduleSlots.length; i++) {
        var slot = moduleSlots[i]
        if (!slot || slot === sourceSlot || slot.region !== region || slot.moduleName !== name ||
-@@ -972,8 +1057,23 @@
+@@ -972,8 +1057,23 @@ Item {
      return ""
    }
  
@@ -244,7 +247,7 @@
  
      var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
      return dropBarModule(sourceSlot, targetSlot.region, beforeName)
-@@ -992,7 +1092,7 @@
+@@ -992,7 +1092,7 @@ Item {
    function moduleClickTargetAt(slot, localX, localY) {
      for (var i = clickTargets.length - 1; i >= 0; i--) {
        var target = clickTargets[i]
@@ -253,7 +256,78 @@
  
        var targetPoint = { x: localX, y: localY }
        try {
-@@ -1570,12 +1670,17 @@
+@@ -1283,69 +1383,7 @@ Item {
+       }
+     }
+ 
+-    PopupWindow {
+-      id: tooltipWindow
+-
+-      visible: root.tooltipShown && root.tooltipTarget !== null && root.tooltipText !== "" && root.targetBelongsToWindow(root.tooltipTarget, barWindow)
+-      color: "transparent"
+-      implicitWidth: Math.ceil(tooltipBubble.implicitWidth)
+-      implicitHeight: Math.ceil(tooltipBubble.implicitHeight)
+-
+-      anchor {
+-        id: tooltipAnchor
+-        window: barWindow
+-        adjustment: PopupAdjustment.Slide
+-        edges: Edges.Top | Edges.Left
+-        gravity: Edges.Bottom | Edges.Right
+-        rect.width: 1
+-        rect.height: 1
+-
+-        onAnchoring: {
+-          var target = root.tooltipTarget
+-          if (!root.targetBelongsToWindow(target, barWindow)) return
+-
+-          var popupWidth = tooltipWindow.implicitWidth
+-          var popupHeight = tooltipWindow.implicitHeight
+-          var localX = target.width / 2 - popupWidth / 2
+-          var localY = target.height + 6
+-
+-          if (root.position === "bottom") {
+-            localY = -popupHeight - 6
+-          } else if (root.position === "left") {
+-            localX = target.width + 6
+-            localY = target.height / 2 - popupHeight / 2
+-          } else if (root.position === "right") {
+-            localX = -popupWidth - 6
+-            localY = target.height / 2 - popupHeight / 2
+-          }
+-
+-          var point = barWindow.contentItem.mapFromItem(target, localX, localY)
+-          tooltipAnchor.rect.x = Math.round(point.x)
+-          tooltipAnchor.rect.y = Math.round(point.y)
+-        }
+-      }
+-
+-      BorderSurface {
+-        id: tooltipBubble
+-        implicitWidth: tooltipLabel.implicitWidth + 20
+-        implicitHeight: tooltipLabel.implicitHeight + 14
+-        color: Color.tooltip.background
+-        borderSpec: Border.surfaceSpec("tooltip", "border", Color.tooltip.border, 1)
+-        radius: Style.cornerRadius
+-
+-        Text {
+-          id: tooltipLabel
+-          textFormat: Text.PlainText
+-          anchors.centerIn: parent
+-          text: root.tooltipText
+-          color: Color.tooltip.text
+-          font.family: root.fontFamily
+-          font.pixelSize: Style.font.body
+-          horizontalAlignment: Text.AlignHCenter
+-          verticalAlignment: Text.AlignVCenter
+-        }
+-      }
+-    }
++    BarTooltip { tooltipHostWindow: barWindow }
+ 
+     Component {
+       id: horizontalBar
+@@ -1570,12 +1608,17 @@ Item {
            anchors.verticalCenter: centerAnchorModule.verticalCenter
          }
  
@@ -274,7 +348,7 @@
          }
  
          ModuleList {
-@@ -1615,12 +1720,17 @@
+@@ -1615,12 +1658,17 @@ Item {
            anchors.horizontalCenter: centerAnchorModule.horizontalCenter
          }
  
@@ -295,7 +369,7 @@
          }
  
          ModuleList {
-@@ -1745,7 +1855,7 @@
+@@ -1745,7 +1793,7 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -304,7 +378,7 @@
            }
          }
        }
-@@ -1763,7 +1873,60 @@
+@@ -1763,7 +1811,127 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -312,6 +386,72 @@
 +            layoutRegion: moduleListRoot.region
 +          }
 +        }
++      }
++    }
++  }
++
++  component BarTooltip: PopupWindow {
++    id: tooltipWindow
++    required property var tooltipHostWindow
++    property bool hostOpen: true
++
++    visible: hostOpen && root.tooltipShown && root.tooltipTarget !== null && root.tooltipText !== "" && root.targetBelongsToWindow(root.tooltipTarget, tooltipHostWindow)
++    color: "transparent"
++    implicitWidth: Math.ceil(tooltipBubble.implicitWidth)
++    implicitHeight: Math.ceil(tooltipBubble.implicitHeight)
++
++    anchor {
++      id: tooltipAnchor
++      window: tooltipHostWindow
++      adjustment: PopupAdjustment.Slide
++      edges: Edges.Top | Edges.Left
++      gravity: Edges.Bottom | Edges.Right
++      rect.width: 1
++      rect.height: 1
++
++      onAnchoring: {
++        var target = root.tooltipTarget
++        if (!root.targetBelongsToWindow(target, tooltipHostWindow)) return
++
++        var popupWidth = tooltipWindow.implicitWidth
++        var popupHeight = tooltipWindow.implicitHeight
++        var localX = target.width / 2 - popupWidth / 2
++        var localY = target.height + 6
++
++        if (root.position === "bottom") {
++          localY = -popupHeight - 6
++        } else if (root.position === "left") {
++          localX = target.width + 6
++          localY = target.height / 2 - popupHeight / 2
++        } else if (root.position === "right") {
++          localX = -popupWidth - 6
++          localY = target.height / 2 - popupHeight / 2
++        }
++
++        var point = target.mapToItem(null, localX, localY)
++        tooltipAnchor.rect.x = Math.round(point.x)
++        tooltipAnchor.rect.y = Math.round(point.y)
++      }
++    }
++
++    BorderSurface {
++      id: tooltipBubble
++      implicitWidth: tooltipLabel.implicitWidth + 20
++      implicitHeight: tooltipLabel.implicitHeight + 14
++      color: Color.tooltip.background
++      borderSpec: Border.surfaceSpec("tooltip", "border", Color.tooltip.border, 1)
++      radius: Style.cornerRadius
++
++      Text {
++        id: tooltipLabel
++        textFormat: Text.PlainText
++        anchors.centerIn: parent
++        text: root.tooltipText
++        color: Color.tooltip.text
++        font.family: root.fontFamily
++        font.pixelSize: Style.font.body
++        horizontalAlignment: Text.AlignHCenter
++        verticalAlignment: Text.AlignVCenter
 +      }
 +    }
 +  }
@@ -336,6 +476,7 @@
 +
 +    Item {
 +      id: drawerKeys
++      BarTooltip { tooltipHostWindow: drawer; hostOpen: drawer.open }
 +      anchors.fill: parent
 +      focus: true
 +      Keys.onEscapePressed: drawer.close()
@@ -366,7 +507,7 @@
            }
          }
        }
-@@ -1774,7 +1937,13 @@
+@@ -1774,7 +1942,13 @@ Item {
      id: slot
  
      required property var entry
@@ -381,7 +522,7 @@
      readonly property string moduleName: root.entryId(entry)
      readonly property var moduleSettings: root.entrySettings(entry)
      readonly property string customType: root.customModuleType(entry)
-@@ -1817,7 +1986,49 @@
+@@ -1817,7 +1991,49 @@ Item {
      height: implicitHeight
      z: modulePointer.dragging ? 100 : 0
  
@@ -432,7 +573,7 @@
      Component.onDestruction: {
        if (root.barDragSource === slot) root.clearBarDrag()
        root.unregisterModuleSlot(slot)
-@@ -1962,6 +2173,8 @@
+@@ -1962,6 +2178,8 @@ Item {
          var wasDragging = dragging
          var targetSlot = root.barDragTarget
          var afterTarget = root.barDragAfter
@@ -441,7 +582,7 @@
  
          if (wasDragging) suppressClick = true
  
-@@ -1969,7 +2182,7 @@
+@@ -1969,7 +2187,7 @@ Item {
          root.clearBarDrag()
  
          if (wasDragging && targetSlot) {
@@ -450,9 +591,11 @@
            mouse.accepted = true
          } else if (!wasDragging) {
            mouse.accepted = false
+diff --git a/shell/Ui/KeyboardPanel.qml b/shell/Ui/KeyboardPanel.qml
+index b2fb218..1de53af 100644
 --- a/shell/Ui/KeyboardPanel.qml
 +++ b/shell/Ui/KeyboardPanel.qml
-@@ -47,6 +47,8 @@
+@@ -47,6 +47,8 @@ PanelWindow {
    property var borderSpec: Border.surfaceSpec("popups", "border", Color.popups.border, Math.max(1, Style.space(2)))
    property bool centerOnBar: false
    property bool open: false
@@ -461,7 +604,20 @@
    property int gap: Style.gapsOut  // distance between bar edge and panel
    property bool popoutSwitching: false
    property bool popoutSwitchClosing: false
-@@ -78,7 +80,7 @@
+@@ -61,9 +63,12 @@ PanelWindow {
+   property Item focusTarget: null
+ 
+   default property alias contentItem: contentHolder.children
++  readonly property Item panelSurfaceItem: card.parent
+ 
+   readonly property var coordinatorKey: owner || root
+   readonly property var anchorWindow: anchorItem ? anchorItem.QsWindow.window : null
++  readonly property Item anchorSurfaceItem: anchorWindow
++    ? ("panelSurfaceItem" in anchorWindow ? anchorWindow.panelSurfaceItem : anchorWindow.contentItem) : null
+   readonly property string barPos: bar ? bar.position : "top"
+ 
+   function close() {
+@@ -78,7 +83,7 @@ PanelWindow {
    // --- screen + lifetime ---------------------------------------------------
  
    screen: anchorWindow ? anchorWindow.screen : null
@@ -470,7 +626,7 @@
    color: "transparent"
    exclusionMode: ExclusionMode.Ignore
  
-@@ -122,8 +124,8 @@
+@@ -122,8 +127,8 @@ PanelWindow {
      return Math.max(bar.barSize, actual) + root.gap
    }
    mask: Region {
@@ -481,7 +637,25 @@
    }
  
    // Track every layout change between the bar's contentItem and the
-@@ -189,8 +191,9 @@
+@@ -132,7 +137,7 @@ PanelWindow {
+   // actually reactive — mapToItem on its own is a one-shot.
+   TransformWatcher {
+     id: anchorWatcher
+-    a: anchorWindow ? anchorWindow.contentItem : null
++    a: root.anchorSurfaceItem
+     b: anchorItem
+   }
+ 
+@@ -144,7 +149,7 @@ PanelWindow {
+   readonly property point anchorScreenPos: {
+     anchorWatcher.transform  // reactive dependency
+     if (!anchorItem || !anchorWindow) return Qt.point(0, 0)
+-    return anchorItem.mapToItem(anchorWindow.contentItem, 0, 0)
++    return anchorItem.mapToItem(root.anchorSurfaceItem, 0, 0)
+   }
+   readonly property real anchorW: anchorItem ? anchorItem.width : 0
+   readonly property real anchorH: anchorItem ? anchorItem.height : 0
+@@ -189,8 +194,9 @@ PanelWindow {
    // parallel axis (along the bar) the anchor item's reported position is
    // still consistent with the bar content origin, so it's accurate for
    // centering the card under the icon.
@@ -493,7 +667,7 @@
    readonly property point cardOrigin: {
      if (!anchorItem || !bar) return Qt.point(margin, margin)
      var x = 0, y = 0
-@@ -306,8 +309,14 @@
+@@ -306,8 +312,14 @@ PanelWindow {
        for (var i = targets.length - 1; i >= 0; i--) {
          var target = targets[i]
          if (!target || !target.triggerPress || target.visible === false || target.opacity === 0 || !target.mapToItem) continue
@@ -510,9 +684,17 @@
          if (p.x >= pos.x && p.x <= pos.x + target.width && p.y >= pos.y && p.y <= pos.y + target.height) return target
        }
        return null
+diff --git a/shell/Ui/PopupCard.qml b/shell/Ui/PopupCard.qml
+index 058b068..481e52e 100644
 --- a/shell/Ui/PopupCard.qml
 +++ b/shell/Ui/PopupCard.qml
-@@ -27,8 +27,9 @@
+@@ -23,12 +23,15 @@ PopupWindow {
+ 
+   readonly property var coordinatorKey: owner || root
+   readonly property var anchorWindow: anchorItem ? anchorItem.QsWindow.window : null
++  readonly property Item anchorSurfaceItem: anchorWindow
++    ? ("panelSurfaceItem" in anchorWindow ? anchorWindow.panelSurfaceItem : anchorWindow.contentItem) : null
+   readonly property var popupScreen: anchorWindow ? anchorWindow.screen : null
    readonly property bool containsMouse: cardHover.hovered
    readonly property real screenW: popupScreen ? popupScreen.width : 0
    readonly property real screenH: popupScreen ? popupScreen.height : 0
@@ -524,12 +706,12 @@
    readonly property real availableCardWidth: screenW > 0
      ? Math.max(120, screenW - ((bar && (bar.position === "left" || bar.position === "right")) ? barW : 0) - root.margin * 2)
      : 0
-@@ -116,6 +117,13 @@
+@@ -116,6 +119,13 @@ PopupWindow {
        var window = target.QsWindow.window
        if (!window) return
  
 +      if (root.drawerAnchor) {
-+        var drawerPoint = window.contentItem.mapFromItem(target, localX, localY)
++        var drawerPoint = root.anchorSurfaceItem.mapFromItem(target, localX, localY)
 +        popupAnchor.rect.x = Math.round(Math.max(root.margin, Math.min(drawerPoint.x, window.width - popupWidth - root.margin)))
 +        popupAnchor.rect.y = Math.round(Math.max(root.margin, Math.min(drawerPoint.y, window.height - popupHeight - root.margin)))
 +        return
@@ -538,3 +720,12 @@
        if (root.centerOnBar) {
          var cx = 0;
          var cy = 0;
+@@ -134,7 +144,7 @@ PopupWindow {
+         return
+       }
+ 
+-      var point = window.contentItem.mapFromItem(target, localX, localY)
++      var point = root.anchorSurfaceItem.mapFromItem(target, localX, localY)
+ 
+       if (root.bar.position === "top" || root.bar.position === "bottom") {
+         point.x = Math.max(root.margin, Math.min(point.x, window.width - popupWidth - root.margin))
