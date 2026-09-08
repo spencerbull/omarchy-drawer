@@ -18,7 +18,7 @@ index 03c748b..58d8b95 100644
  
    function setCenterHoverRevealSuppressed(value) {
 diff --git a/shell/plugins/bar/Bar.qml b/shell/plugins/bar/Bar.qml
-index be9fece..975b54b 100644
+index be9fece..31c8b32 100644
 --- a/shell/plugins/bar/Bar.qml
 +++ b/shell/plugins/bar/Bar.qml
 @@ -111,6 +111,102 @@ Item {
@@ -528,7 +528,7 @@ index be9fece..975b54b 100644
      readonly property string moduleName: root.entryId(entry)
      readonly property var moduleSettings: root.entrySettings(entry)
      readonly property string customType: root.customModuleType(entry)
-@@ -1817,7 +1997,49 @@ Item {
+@@ -1817,7 +1997,56 @@ Item {
      height: implicitHeight
      z: modulePointer.dragging ? 100 : 0
  
@@ -560,15 +560,22 @@ index be9fece..975b54b 100644
 +        }
 +      }
 +    }
-+    onDrawerHostChanged: Qt.callLater(syncDrawerParent)
++    // Slot-owned scheduling is canceled when a layout rebuild destroys us.
++    // Qt.callLater callbacks outlive their QML owner during startup churn.
++    Timer {
++      id: drawerParentSync
++      interval: 0
++      onTriggered: {
++        if (!slot.originalWindow) slot.originalWindow = root.slotWindow(slot)
++        slot.syncDrawerParent()
++      }
++    }
++    onDrawerHostChanged: drawerParentSync.restart()
 +    Component.onCompleted: {
 +      originalParent = parent
 +      originalWindow = root.slotWindow(slot)
 +      root.registerModuleSlot(slot)
-+      Qt.callLater(function() {
-+        if (!slot.originalWindow) slot.originalWindow = root.slotWindow(slot)
-+        slot.syncDrawerParent()
-+      })
++      drawerParentSync.restart()
 +    }
 +
 +    Loader {
@@ -579,7 +586,7 @@ index be9fece..975b54b 100644
      Component.onDestruction: {
        if (root.barDragSource === slot) root.clearBarDrag()
        root.unregisterModuleSlot(slot)
-@@ -1962,6 +2184,8 @@ Item {
+@@ -1962,6 +2191,8 @@ Item {
          var wasDragging = dragging
          var targetSlot = root.barDragTarget
          var afterTarget = root.barDragAfter
@@ -588,7 +595,7 @@ index be9fece..975b54b 100644
  
          if (wasDragging) suppressClick = true
  
-@@ -1969,7 +2193,7 @@ Item {
+@@ -1969,7 +2200,7 @@ Item {
          root.clearBarDrag()
  
          if (wasDragging && targetSlot) {
