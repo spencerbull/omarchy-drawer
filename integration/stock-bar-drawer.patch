@@ -18,7 +18,7 @@ index 03c748b..58d8b95 100644
  
    function setCenterHoverRevealSuppressed(value) {
 diff --git a/shell/plugins/bar/Bar.qml b/shell/plugins/bar/Bar.qml
-index be9fece..12c9868 100644
+index be9fece..975b54b 100644
 --- a/shell/plugins/bar/Bar.qml
 +++ b/shell/plugins/bar/Bar.qml
 @@ -111,6 +111,102 @@ Item {
@@ -172,7 +172,7 @@ index be9fece..12c9868 100644
          var item = slot.activeItem
          if (item && "settings" in item) item.settings = settings
        }
-@@ -912,39 +1013,23 @@ Item {
+@@ -912,39 +1013,29 @@ Item {
  
    function moduleDropAtScene(scenePoint, sourceSlot) {
      var sourceWindow = root.slotWindow(sourceSlot) || root.barDragWindow
@@ -209,6 +209,12 @@ index be9fece..12c9868 100644
 +      if (!slot || slot === sourceSlot || slot.region === "drawer" || !slot.visible || slot.width <= 0 || slot.height <= 0) continue
 +      if (!root.sameWindow(root.slotWindow(slot), targetWindow)) continue
 +      var slotPoint = slot.mapToItem(null, 0, 0)
++      // Drawer reception is a hit target, not an insertion edge. A large
++      // controller can tie its preceding neighbor in nearest-edge ordering.
++      if (!sourceSlot.drawerController && slot.drawerController &&
++          point.x >= slotPoint.x && point.x <= slotPoint.x + slot.width &&
++          point.y >= slotPoint.y && point.y <= slotPoint.y + slot.height)
++        return { slot: slot, after: false }
 +      candidates.push({ slot: slot, x: slotPoint.x, y: slotPoint.y, width: slot.width, height: slot.height })
      }
 -
@@ -222,7 +228,7 @@ index be9fece..12c9868 100644
      for (var i = 0; i < moduleSlots.length; i++) {
        var slot = moduleSlots[i]
        if (!slot || slot === sourceSlot || slot.region !== region || slot.moduleName !== name ||
-@@ -972,8 +1057,23 @@ Item {
+@@ -972,8 +1063,23 @@ Item {
      return ""
    }
  
@@ -247,7 +253,7 @@ index be9fece..12c9868 100644
  
      var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
      return dropBarModule(sourceSlot, targetSlot.region, beforeName)
-@@ -992,7 +1092,7 @@ Item {
+@@ -992,7 +1098,7 @@ Item {
    function moduleClickTargetAt(slot, localX, localY) {
      for (var i = clickTargets.length - 1; i >= 0; i--) {
        var target = clickTargets[i]
@@ -256,7 +262,7 @@ index be9fece..12c9868 100644
  
        var targetPoint = { x: localX, y: localY }
        try {
-@@ -1283,69 +1383,7 @@ Item {
+@@ -1283,69 +1389,7 @@ Item {
        }
      }
  
@@ -327,7 +333,7 @@ index be9fece..12c9868 100644
  
      Component {
        id: horizontalBar
-@@ -1570,12 +1608,17 @@ Item {
+@@ -1570,12 +1614,17 @@ Item {
            anchors.verticalCenter: centerAnchorModule.verticalCenter
          }
  
@@ -348,7 +354,7 @@ index be9fece..12c9868 100644
          }
  
          ModuleList {
-@@ -1615,12 +1658,17 @@ Item {
+@@ -1615,12 +1664,17 @@ Item {
            anchors.horizontalCenter: centerAnchorModule.horizontalCenter
          }
  
@@ -369,7 +375,7 @@ index be9fece..12c9868 100644
          }
  
          ModuleList {
-@@ -1745,7 +1793,7 @@ Item {
+@@ -1745,7 +1799,7 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -378,7 +384,7 @@ index be9fece..12c9868 100644
            }
          }
        }
-@@ -1763,7 +1811,127 @@ Item {
+@@ -1763,7 +1817,127 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -507,7 +513,7 @@ index be9fece..12c9868 100644
            }
          }
        }
-@@ -1774,7 +1942,13 @@ Item {
+@@ -1774,7 +1948,13 @@ Item {
      id: slot
  
      required property var entry
@@ -522,7 +528,7 @@ index be9fece..12c9868 100644
      readonly property string moduleName: root.entryId(entry)
      readonly property var moduleSettings: root.entrySettings(entry)
      readonly property string customType: root.customModuleType(entry)
-@@ -1817,7 +1991,49 @@ Item {
+@@ -1817,7 +1997,49 @@ Item {
      height: implicitHeight
      z: modulePointer.dragging ? 100 : 0
  
@@ -573,7 +579,7 @@ index be9fece..12c9868 100644
      Component.onDestruction: {
        if (root.barDragSource === slot) root.clearBarDrag()
        root.unregisterModuleSlot(slot)
-@@ -1962,6 +2178,8 @@ Item {
+@@ -1962,6 +2184,8 @@ Item {
          var wasDragging = dragging
          var targetSlot = root.barDragTarget
          var afterTarget = root.barDragAfter
@@ -582,7 +588,7 @@ index be9fece..12c9868 100644
  
          if (wasDragging) suppressClick = true
  
-@@ -1969,7 +2187,7 @@ Item {
+@@ -1969,7 +2193,7 @@ Item {
          root.clearBarDrag()
  
          if (wasDragging && targetSlot) {

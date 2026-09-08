@@ -9,6 +9,7 @@ for file in "${files[@]}"; do
   mkdir -p -- "$test_checkout/$(dirname -- "$file")"
   cp -- "$source_checkout/$file" "$test_checkout/$file"
 done
+cp -- "$source_checkout/shell/plugins/bar/BarModel.js" "$test_checkout/shell/plugins/bar/BarModel.js"
 git -C "$test_checkout" init -q
 git -C "$test_checkout" add -- shell
 git -C "$test_checkout" -c user.name=Test -c user.email=test@example.invalid commit -qm baseline

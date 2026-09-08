@@ -18,7 +18,7 @@ const layout = { left: [{ id: 'omarchy.menu' }], center: [{ id: 'test.music' }],
 const context = {
   drawerRevision: 0, drawerHosts: [], layoutConfig: layout, moduleSlots: [],
   entryId: e => e.id, entrySettings: e => e, canonicalWidgetId: id => id,
-  BarModel: { nearestDropTarget: candidates => candidates.length ? { slot: candidates[0].slot, after: false } : null },
+  BarModel: require(path.join(process.argv[2], 'shell/plugins/bar/BarModel.js')),
   focusedScreenName: () => 'one', slotScreenName: () => 'one',
   sameWindow: (a,b) => a === b,
   slotWindow: slot => slot.window,
@@ -44,7 +44,6 @@ const otherPanel = { open: true };
 context.moduleSlots.push({ pluginApiId: 'test.drawer', drawerController: true, drawerPanel: otherPanel });
 context.setPluginDrawerOpen('test.drawer', false);
 assert.equal(panel.open, false); assert.equal(otherPanel.open, false);
-let stackedBefore = null;
 let siblingParents = [];
 const sibling = { moduleName: 'test.second', set parent(value) { siblingParents.push(value); } };
 context.originalParent = { children: [sibling] };
@@ -84,4 +83,16 @@ context.position = 'right';
 barWindow.width = 30; barWindow.height = 800;
 assert.equal(context.moduleDropAtScene({x:985,y:10}, hidden).slot, target);
 assert.equal(context.moduleDropAtScene({x:600,y:10}, hidden), null);
+// Prove the real native edge algorithm's tie, then verify receiving priority.
+context.position = 'left'; context.vertical = true;
+screen.height = 1000; barWindow.height = 1000;
+const neighbor = {...target, moduleName: 'omarchy.example', drawerController: false, width: 28, height: 28, mapToItem: () => ({x:0,y:784})};
+const largeController = {...target, width: 28, height: 54, mapToItem: () => ({x:0,y:812})};
+const tiePoint = {x:14,y:839};
+const edgeCandidates = [neighbor, largeController].map(slot => ({slot, ...slot.mapToItem(), width:slot.width, height:slot.height}));
+assert.equal(context.BarModel.nearestDropTarget(edgeCandidates, tiePoint, true).slot, neighbor);
+context.moduleSlots = [neighbor, largeController];
+assert.equal(context.moduleDropAtScene(tiePoint, sourceSlot).slot, largeController);
+assert.equal(context.moduleDropAtScene({x:14,y:811}, sourceSlot).slot, neighbor);
+assert.equal(context.moduleDropAtScene(tiePoint, {...sourceSlot, drawerController:true}).slot, neighbor);
 console.log('Host contracts: controller safety, detached labels, scoped open, exact drop, restore and cross-window coordinates passed.');
