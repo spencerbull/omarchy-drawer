@@ -9,6 +9,7 @@ Column {
   required property var controller
   property bool editing: false
   property string editingId: ""
+  property string removalId: ""
   width: parent ? parent.width : Style.space(460)
   spacing: Style.space(12)
   property string search: ""
@@ -51,14 +52,14 @@ Column {
     spacing: Style.space(6)
     visible: controller.state.activeSpace !== "global"
     DrawerButton { text: "Rename"; onClicked: { root.editingId = controller.state.activeSpace; nameInput.text = controller.spaceName; root.editing = true; nameInput.forceActiveFocus() } }
-    DrawerButton { text: "Remove space"; onClicked: removeDialog.open() }
+    DrawerButton { text: "Remove space"; onClicked: { root.removalId = controller.state.activeSpace; removeDialog.open() } }
   }
   Dialog {
     id: removeDialog
     title: "Remove this space?"
     modal: true
     standardButtons: Dialog.Cancel | Dialog.Ok
-    onAccepted: controller.deleteSpace(controller.state.activeSpace)
+    onAccepted: controller.deleteSpace(root.removalId)
     Label { text: "Plugins and Global settings are kept." }
   }
   RowLayout {

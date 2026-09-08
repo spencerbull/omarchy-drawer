@@ -52,8 +52,10 @@ Right-click the drawer button to toggle Show all / saved space.
 node --test tests/model.test.cjs
 omarchy plugin validate "$PWD"
 ./scripts/test-qml
+integration/test-apply.sh "$OMARCHY_PATH"
+./scripts/test-native  # briefly runs a fixture bar on the current Wayland session
 ```
 
-The QML test uses the installed Omarchy components in an offscreen fixture, exercises space and mode changes, and renders normal and narrow layouts into `.artifacts/`. Native drag and popup verification is separate from this fixture.
+The QML test uses the installed Omarchy components in an offscreen fixture, exercises space and mode changes, and renders normal and narrow layouts into `.artifacts/`. The native fixture separately exercises pointer dragging, service-backed widget identity, center-anchor visibility, popup handoff, closed input masks, and original ordering. Set `DRAWER_POSITION=top`, `bottom`, `left`, or `right` to test an orientation.
 
 MIT licensed. Host integration changes derive from Omarchy; its license is retained alongside the patch.

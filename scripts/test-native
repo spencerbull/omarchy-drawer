@@ -18,8 +18,8 @@ ln -s "$OMARCHY_PATH/shell/Commons" "$fixture/shell/Commons"
 ln -s "$fixture/shell/plugins/bar" "$fixture/stock"
 ln -s "$repo" "$fixture/plugin"
 mkdir -p "$repo/.artifacts"
-logfile="$repo/.artifacts/native.log"
-DRAWER_NATIVE_IMAGE="$repo/.artifacts/native.png" timeout 18 qs -p "$fixture" --no-color > "$logfile" 2>&1 || { cat "$logfile"; exit 1; }
+logfile="$repo/.artifacts/native-${DRAWER_POSITION:-bottom}.log"
+DRAWER_NATIVE_IMAGE="$repo/.artifacts/native-${DRAWER_POSITION:-bottom}.png" timeout 18 qs -p "$fixture" --no-color > "$logfile" 2>&1 || { cat "$logfile"; exit 1; }
 cat "$logfile"
 rg -q DRAWER_NATIVE_OK "$logfile"
-if rg -q 'FAIL!|ERROR|WARN qml|Binding loop|NATIVE_TIMEOUT' "$logfile"; then exit 1; fi
+if rg -q 'FAIL!|ERROR|WARN qml|Binding loop|TypeError|Unable to assign|Could not convert|NATIVE_TIMEOUT' "$logfile"; then exit 1; fi
