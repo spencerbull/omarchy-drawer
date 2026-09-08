@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "spencerbull.drawer",
+  "name": "Drawer",
+  "version": "0.1.0",
+  "author": "spencerbull",
+  "description": "A plugin drawer with saved spaces and quick Default and All views",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "BarWidget.qml"},
+  "barWidget": {
+    "displayName": "Drawer",
+    "description": "Drag plugins into the drawer and switch saved spaces",
+    "category": "Organization",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {"drawerController": true}
+  }
+}

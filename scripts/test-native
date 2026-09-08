@@ -1,0 +1,25 @@
+#!/bin/bash
+set -euo pipefail
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+: "${OMARCHY_PATH:?Set OMARCHY_PATH to the stock Omarchy checkout}"
+: "${WAYLAND_DISPLAY:?A running Wayland compositor is required}"
+fixture=$(mktemp -d /tmp/omarchy-drawer-native.XXXXXX)
+trap 'rm -rf -- "$fixture"' EXIT
+mkdir -p "$fixture/shell/plugins/bar"
+cp "$OMARCHY_PATH/shell/plugins/bar/Bar.qml" "$OMARCHY_PATH/shell/plugins/bar/BarModel.js" "$fixture/shell/plugins/bar/"
+cp -a "$OMARCHY_PATH/shell/Ui" "$fixture/shell/Ui"
+if ! rg -q 'drawerControllerFor' "$fixture/shell/plugins/bar/Bar.qml"; then
+  git -C "$fixture" apply "${DRAWER_PATCH:-$repo/integration/stock-bar-drawer.patch}"
+fi
+cp "$repo/tests/NativeSmoke.qml" "$fixture/shell.qml"
+ln -s "$fixture/shell/Ui" "$fixture/Ui"
+ln -s "$OMARCHY_PATH/shell/Commons" "$fixture/Commons"
+ln -s "$OMARCHY_PATH/shell/Commons" "$fixture/shell/Commons"
+ln -s "$fixture/shell/plugins/bar" "$fixture/stock"
+ln -s "$repo" "$fixture/plugin"
+mkdir -p "$repo/.artifacts"
+logfile="$repo/.artifacts/native.log"
+DRAWER_NATIVE_IMAGE="$repo/.artifacts/native.png" timeout 18 qs -p "$fixture" --no-color > "$logfile" 2>&1 || { cat "$logfile"; exit 1; }
+cat "$logfile"
+rg -q DRAWER_NATIVE_OK "$logfile"
+if rg -q 'FAIL!|ERROR|WARN qml|Binding loop|NATIVE_TIMEOUT' "$logfile"; then exit 1; fi

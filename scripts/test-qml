@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+: "${OMARCHY_PATH:?Set OMARCHY_PATH to an Omarchy source tree}"
+fixture=$(mktemp -d /tmp/omarchy-drawer-ui.XXXXXX)
+trap 'rm -rf -- "$fixture"' EXIT
+cp "$repo/tests/UiSmoke.qml" "$fixture/shell.qml"
+ln -s "$repo" "$fixture/plugin"
+ln -s "$OMARCHY_PATH/shell/Commons" "$fixture/Commons"
+ln -s "$OMARCHY_PATH/shell/Ui" "$fixture/Ui"
+mkdir -p "$repo/.artifacts"
+for width in 520 360; do
+  logfile="$repo/.artifacts/ui-$width.log"
+  QT_QPA_PLATFORM=offscreen DRAWER_TEST_WIDTH="$width" DRAWER_TEST_IMAGE="$repo/.artifacts/ui-$width.png" \
+    timeout 20 qs -p "$fixture" --no-color > "$logfile" 2>&1 || { cat "$logfile"; exit 1; }
+  cat "$logfile"
+  rg -q DRAWER_UI_OK "$logfile"
+  if rg -q 'FAIL!|ERROR|WARN qml|Binding loop' "$logfile"; then exit 1; fi
+done
