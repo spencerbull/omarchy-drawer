@@ -1,4 +1,4 @@
-name: State tests
+name: Drawer checks
 on: [push, pull_request]
 permissions:
   contents: read
@@ -12,7 +12,7 @@ jobs:
           node-version: '22'
       - run: node --test tests/model.test.cjs
       - run: python3 -m json.tool manifest.json > /dev/null
-      - run: bash -n scripts/*
+      - run: for script in scripts/* integration/*.sh; do bash -n "$script"; done
       - uses: actions/checkout@v4
         with:
           repository: basecamp/omarchy
@@ -21,6 +21,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             shell/plugins/bar/Bar.qml
+            shell/plugins/bar/BarModel.js
             shell/Ui/PluginBarApi.qml
             shell/Ui/KeyboardPanel.qml
             shell/Ui/PopupCard.qml

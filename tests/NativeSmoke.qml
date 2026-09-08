@@ -87,6 +87,12 @@ ShellRoot {
     function test_native_drag() {
       console.log("NATIVE_STAGE start")
       wait(500)
+      var baseline = JSON.parse(JSON.stringify(hostShell.config))
+      var transient = JSON.parse(JSON.stringify(baseline))
+      transient.bar.layout.right = []
+      hostShell.config = transient
+      hostShell.config = baseline
+      wait(200)
       var controllerSlot = slot("spencerbull.drawer")
       var demoSlot = slot("test.widget")
       verify(controllerSlot !== null && demoSlot !== null)
