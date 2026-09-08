@@ -1,0 +1,540 @@
+--- a/shell/Ui/PluginBarApi.qml
++++ b/shell/Ui/PluginBarApi.qml
+@@ -39,6 +39,14 @@
+   property var _targetBelongsToWindow: null
+   property var _moduleWidgets: null
+   property var _run: null
++  // Host-owned drawers expose no widget or service objects to their controller.
++  readonly property bool drawerSupported: true
++  property var drawerEntries: []
++  property var _setDrawerOpen: null
++  function setDrawerOpen(value) {
++    return _setDrawerOpen ? _setDrawerOpen(!!value) : false
++  }
++
+   property var _setCenterHoverRevealSuppressed: null
+ 
+   function setCenterHoverRevealSuppressed(value) {
+--- a/shell/plugins/bar/Bar.qml
++++ b/shell/plugins/bar/Bar.qml
+@@ -111,6 +111,102 @@
+   property var moduleSlots: []
+   property var pluginBarApis: ({})
+   property var pluginObjectOwners: []
++  property int drawerRevision: 0
++  property var drawerHosts: []
++
++  function drawerControllerFor(widgetId) {
++    drawerRevision
++    var controllers = []
++    var sections = ["left", "center", "right"]
++    for (var s = 0; s < sections.length; s++) {
++      var entries = layoutConfig[sections[s]] || []
++      for (var i = 0; i < entries.length; i++) {
++        var settings = entrySettings(entries[i])
++        if (settings.drawerController === true) controllers.push({ id: entryId(entries[i]), settings: settings })
++      }
++    }
++    // Controllers must always remain reachable. First configured owner wins.
++    for (var c = 0; c < controllers.length; c++)
++      if (controllers[c].id === widgetId) return ""
++    for (var j = 0; j < controllers.length; j++) {
++      var hidden = controllers[j].settings.hiddenWidgets
++      if (Array.isArray(hidden) && hidden.indexOf(widgetId) !== -1) return controllers[j].id
++    }
++    return ""
++  }
++
++  function publicDrawerEntries(pluginId) {
++    drawerRevision
++    var catalog = root.barWidgetRegistry.widgets
++    var sections = ["left", "center", "right"]
++    var allowed = false
++    var out = []
++    for (var s = 0; s < sections.length; s++) {
++      var entries = layoutConfig[sections[s]] || []
++      for (var i = 0; i < entries.length; i++) {
++        var id = entryId(entries[i])
++        if (id === pluginId && entrySettings(entries[i]).drawerController === true) allowed = true
++        var metadata = catalog[canonicalWidgetId(id)] ? catalog[canonicalWidgetId(id)].metadata : null
++        out.push({ id: id, name: metadata ? String(metadata.displayName || id) : id })
++      }
++    }
++    return allowed ? out : []
++  }
++
++  function drawerHostFor(widgetId, window) {
++    var owner = drawerControllerFor(widgetId)
++    for (var i = 0; i < drawerHosts.length; i++) {
++      var host = drawerHosts[i]
++      if (host.controllerSlot.moduleName === owner && sameWindow(host.controllerSlot.originalWindow, window)) return host
++    }
++    return null
++  }
++
++  function setPluginDrawerOpen(pluginId, value) {
++    var focused = focusedScreenName()
++    var fallback = null
++    for (var i = 0; i < moduleSlots.length; i++) {
++      var slot = moduleSlots[i]
++      if (slot.pluginApiId !== pluginId || !slot.drawerController || !slot.drawerPanel) continue
++      if (!value) { slot.drawerPanel.open = false; fallback = slot; continue }
++      if (!fallback) fallback = slot
++      if (slotScreenName(slot) === focused) { fallback = slot; break }
++    }
++    if (!fallback) return false
++    fallback.drawerPanel.open = value
++    return true
++  }
++
++  function registerDrawerHost(host) {
++    drawerHosts = drawerHosts.concat([host])
++  }
++
++  function unregisterDrawerHost(host) {
++    // Return items before destroying their temporary visual parent.
++    for (var i = 0; i < moduleSlots.length; i++) {
++      var slot = moduleSlots[i]
++      if (slot.parent === host.widgetContainer && slot.originalParent) {
++        slot.parent = slot.originalParent
++        slot.restoreDrawerOrder()
++      }
++    }
++    drawerHosts = drawerHosts.filter(function(item) { return item !== host })
++  }
++
++  function scenePointInWindow(point, sourceWindow, targetWindow) {
++    var screenPoint = windowScreenPoint(point, sourceWindow)
++    var origin = windowScreenPoint({ x: 0, y: 0 }, targetWindow)
++    return { x: screenPoint.x - origin.x, y: screenPoint.y - origin.y }
++  }
++
++  function slotContainsScenePoint(slot, point, sourceWindow) {
++    if (!slot || !slot.originalWindow || !sourceWindow ||
++        slot.originalWindow.screen !== sourceWindow.screen) return false
++    var local = scenePointInWindow(point, sourceWindow, slot.originalWindow)
++    var rect = slot.mapToItem(null, 0, 0)
++    return local.x >= rect.x && local.x <= rect.x + slot.width &&
++      local.y >= rect.y && local.y <= rect.y + slot.height
++  }
+ 
+   Component {
+     id: pluginBarApiComponent
+@@ -123,6 +219,7 @@
+ 
+   function bindPluginBarApi(api) {
+     if (!api) return
++    api.drawerEntries = Qt.binding(function() { return root.publicDrawerEntries(api.pluginId) })
+     api.foreground = Qt.binding(function() { return root.foreground })
+     api.barForeground = Qt.binding(function() { return root.barForeground })
+     api.background = Qt.binding(function() { return root.background })
+@@ -264,6 +361,7 @@
+           ? root.moduleWidgets(moduleName) : []
+       },
+       _run: function(command) { root.run(command) },
++      _setDrawerOpen: function(value) { return root.setPluginDrawerOpen(key, value) },
+       _setCenterHoverRevealSuppressed: function(value) {
+         root.centerHoverRevealSuppressed = !!value
+       }
+@@ -447,7 +545,7 @@
+ 
+     try {
+       var slotPoint = slot.mapToItem(null, 0, 0)
+-      var screenPoint = barDragScreenPoint(slotPoint)
++      var screenPoint = windowScreenPoint(slotPoint, root.slotWindow(slot))
+       var thickness = Style.spacing.xs
+       if (vertical) {
+         return {
+@@ -593,10 +691,12 @@
+     var delta = BarModel.inlineSettingsDelta(layoutConfig, next)
+     if (delta) {
+       applySettingsDelta(delta)
++      drawerRevision++
+       return
+     }
+     layoutConfig = next
+     barConfigSerial++
++    drawerRevision++
+   }
+ 
+   function applySettingsDelta(delta) {
+@@ -606,7 +706,8 @@
+       var settings = entrySettings(change.entry)
+       for (var s = 0; s < moduleSlots.length; s++) {
+         var slot = moduleSlots[s]
+-        if (!slot || slot.region !== change.region || slot.moduleName !== entryId(change.entry)) continue
++        if (!slot || slot.layoutRegion !== change.region || slot.moduleName !== entryId(change.entry)) continue
++        slot.entry = change.entry
+         var item = slot.activeItem
+         if (item && "settings" in item) item.settings = settings
+       }
+@@ -912,39 +1013,23 @@
+ 
+   function moduleDropAtScene(scenePoint, sourceSlot) {
+     var sourceWindow = root.slotWindow(sourceSlot) || root.barDragWindow
+-    if (sourceWindow && sourceWindow.contentItem) {
+-      var barPoint = sourceWindow.contentItem.mapFromItem(null, scenePoint.x, scenePoint.y)
+-      if (barPoint.x < 0 || barPoint.x > sourceWindow.contentItem.width ||
+-          barPoint.y < 0 || barPoint.y > sourceWindow.contentItem.height)
+-        return null
+-    }
+-
++    var targetWindow = sourceSlot.originalWindow || sourceWindow
++    if (!targetWindow || !targetWindow.contentItem) return null
++    var point = scenePointInWindow(scenePoint, sourceWindow, targetWindow)
++    if (point.x < 0 || point.x > targetWindow.width || point.y < 0 || point.y > targetWindow.height) return null
+     var candidates = []
+     for (var i = 0; i < moduleSlots.length; i++) {
+       var slot = moduleSlots[i]
+-      if (!slot || slot === sourceSlot || !slot.visible || slot.width <= 0 || slot.height <= 0) continue
+-      if (sourceWindow && !root.sameWindow(root.slotWindow(slot), sourceWindow)) continue
+-
+-      var slotPoint = { x: slot.x, y: slot.y }
+-      try {
+-        slotPoint = slot.mapToItem(null, 0, 0)
+-      } catch (e) {
+-      }
+-
+-      candidates.push({
+-        slot: slot,
+-        x: slotPoint.x,
+-        y: slotPoint.y,
+-        width: slot.width,
+-        height: slot.height
+-      })
+-    }
+-
+-    return BarModel.nearestDropTarget(candidates, scenePoint, root.vertical)
++      if (!slot || slot === sourceSlot || slot.region === "drawer" || !slot.visible || slot.width <= 0 || slot.height <= 0) continue
++      if (!root.sameWindow(root.slotWindow(slot), targetWindow)) continue
++      var slotPoint = slot.mapToItem(null, 0, 0)
++      candidates.push({ slot: slot, x: slotPoint.x, y: slotPoint.y, width: slot.width, height: slot.height })
++    }
++    return BarModel.nearestDropTarget(candidates, point, root.vertical)
+   }
+ 
+   function visibleModuleSlot(region, name, sourceSlot) {
+-    var sourceWindow = root.slotWindow(sourceSlot) || root.barDragWindow
++    var sourceWindow = sourceSlot.originalWindow || root.slotWindow(sourceSlot) || root.barDragWindow
+     for (var i = 0; i < moduleSlots.length; i++) {
+       var slot = moduleSlots[i]
+       if (!slot || slot === sourceSlot || slot.region !== region || slot.moduleName !== name ||
+@@ -972,8 +1057,23 @@
+     return ""
+   }
+ 
+-  function dropBarModuleAtTarget(sourceSlot, targetSlot, afterTarget) {
++  function dropBarModuleAtTarget(sourceSlot, targetSlot, afterTarget, point, sourceWindow) {
+     if (!sourceSlot || !targetSlot) return false
++    if (sourceSlot.region === "drawer") {
++      var host = sourceSlot.drawerHost
++      var controller = host ? host.controllerSlot.activeItem : null
++      if (!controller || typeof controller.restoreBarWidget !== "function") return false
++      controller.restoreBarWidget(sourceSlot.moduleName)
++      return true
++    }
++    if (targetSlot.drawerController && !sourceSlot.drawerController &&
++        slotContainsScenePoint(targetSlot, point, sourceWindow)) {
++      var receiver = targetSlot.activeItem
++      if (receiver && typeof receiver.acceptBarDrop === "function") {
++        receiver.acceptBarDrop(sourceSlot.moduleName)
++        return true
++      }
++    }
+ 
+     var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
+     return dropBarModule(sourceSlot, targetSlot.region, beforeName)
+@@ -992,7 +1092,7 @@
+   function moduleClickTargetAt(slot, localX, localY) {
+     for (var i = clickTargets.length - 1; i >= 0; i--) {
+       var target = clickTargets[i]
+-      if (!moduleTargetClickable(target)) continue
++      if (!moduleTargetClickable(target) || root.targetWindow(target) !== root.slotWindow(slot)) continue
+ 
+       var targetPoint = { x: localX, y: localY }
+       try {
+@@ -1570,12 +1670,17 @@
+           anchors.verticalCenter: centerAnchorModule.verticalCenter
+         }
+ 
+-        ModuleSlot {
++        Item {
+           id: centerAnchorModule
+           visible: centerRoot.hasAnchor
+-          entry: centerRoot.anchorEntry
+-          region: "center"
++          width: centerAnchorItem.drawerHost ? 0 : centerAnchorItem.width
++          height: centerAnchorItem.drawerHost ? 0 : centerAnchorItem.height
+           anchors.centerIn: parent
++          ModuleSlot {
++            id: centerAnchorItem
++            entry: centerRoot.anchorEntry
++            layoutRegion: "center"
++          }
+         }
+ 
+         ModuleList {
+@@ -1615,12 +1720,17 @@
+           anchors.horizontalCenter: centerAnchorModule.horizontalCenter
+         }
+ 
+-        ModuleSlot {
++        Item {
+           id: centerAnchorModule
+           visible: centerRoot.hasAnchor
+-          entry: centerRoot.anchorEntry
+-          region: "center"
++          width: centerAnchorItem.drawerHost ? 0 : centerAnchorItem.width
++          height: centerAnchorItem.drawerHost ? 0 : centerAnchorItem.height
+           anchors.centerIn: parent
++          ModuleSlot {
++            id: centerAnchorItem
++            entry: centerRoot.anchorEntry
++            layoutRegion: "center"
++          }
+         }
+ 
+         ModuleList {
+@@ -1745,7 +1855,7 @@
+           ModuleSlot {
+             required property var modelData
+             entry: modelData
+-            region: moduleListRoot.region
++            layoutRegion: moduleListRoot.region
+           }
+         }
+       }
+@@ -1763,7 +1873,60 @@
+           ModuleSlot {
+             required property var modelData
+             entry: modelData
+-            region: moduleListRoot.region
++            layoutRegion: moduleListRoot.region
++          }
++        }
++      }
++    }
++  }
++
++  component DrawerPanel: KeyboardPanel {
++    id: drawer
++    required property var controllerSlot
++    readonly property bool pluginDrawerSurface: true
++    readonly property real drawerBarWidth: controllerSlot.originalWindow ? controllerSlot.originalWindow.width : 0
++    readonly property real drawerBarHeight: controllerSlot.originalWindow ? controllerSlot.originalWindow.height : 0
++    property alias widgetContainer: drawerWidgets
++    anchorItem: controllerSlot.activeItem || controllerSlot
++    owner: controllerSlot.activeItem
++    bar: root
++    retainWindow: true
++    contentWidth: fittedContentWidth(Style.space(500))
++    contentHeight: fittedContentHeight(drawerColumn.implicitHeight, Style.space(740))
++    focusTarget: drawerKeys
++    onOpenChanged: if (controllerSlot.activeItem && "opened" in controllerSlot.activeItem) controllerSlot.activeItem.opened = open
++    Component.onCompleted: root.registerDrawerHost(drawer)
++    Component.onDestruction: root.unregisterDrawerHost(drawer)
++
++    Item {
++      id: drawerKeys
++      anchors.fill: parent
++      focus: true
++      Keys.onEscapePressed: drawer.close()
++      Flickable {
++        anchors.fill: parent
++        contentHeight: drawerColumn.implicitHeight
++        boundsBehavior: Flickable.StopAtBounds
++        clip: true
++        Column {
++          id: drawerColumn
++          width: parent.width
++          spacing: Style.space(16)
++          Loader {
++            width: parent.width
++            sourceComponent: drawer.controllerSlot.activeItem && "drawerContent" in drawer.controllerSlot.activeItem
++              ? drawer.controllerSlot.activeItem.drawerContent : null
++          }
++          Text {
++            text: "TUCKED AWAY"
++            color: Color.muted
++            font.family: Style.font.family
++            font.pixelSize: Style.font.body
++          }
++          Flow {
++            id: drawerWidgets
++            width: parent.width
++            spacing: Style.space(10)
+           }
+         }
+       }
+@@ -1774,7 +1937,13 @@
+     id: slot
+ 
+     required property var entry
+-    property string region: ""
++    property string layoutRegion: ""
++    readonly property string region: drawerHost ? "drawer" : layoutRegion
++    property Item originalParent: null
++    property var originalWindow: null
++    readonly property bool drawerController: moduleSettings.drawerController === true
++    readonly property var drawerHost: originalWindow && originalParent && originalParent.visible ? root.drawerHostFor(moduleName, originalWindow) : null
++    readonly property var drawerPanel: drawerLoader.item
+     readonly property string moduleName: root.entryId(entry)
+     readonly property var moduleSettings: root.entrySettings(entry)
+     readonly property string customType: root.customModuleType(entry)
+@@ -1817,7 +1986,49 @@
+     height: implicitHeight
+     z: modulePointer.dragging ? 100 : 0
+ 
+-    Component.onCompleted: root.registerModuleSlot(slot)
++    function syncDrawerParent() {
++      if (!originalParent) return
++      var destination = drawerHost ? drawerHost.widgetContainer : originalParent
++      if (parent === destination) return
++      parent = destination
++      if (!drawerHost) restoreDrawerOrder()
++    }
++    function restoreDrawerOrder() {
++      if (originalParent) {
++        // Reparenting appends a child. Reappend canonical following siblings
++        // without replacing their instances (Item.stackBefore is not QML API).
++        var entries = root.layoutEntries(layoutRegion)
++        var index = root.entryIndex(entries, moduleName)
++        for (var i = index + 1; i < entries.length; i++) {
++          var nextId = root.entryId(entries[i])
++          var siblings = originalParent.children
++          for (var j = 0; j < siblings.length; j++) {
++            var next = siblings[j]
++            if (next !== slot && "moduleName" in next && next.moduleName === nextId) {
++              next.parent = null
++              next.parent = originalParent
++              break
++            }
++          }
++        }
++      }
++    }
++    onDrawerHostChanged: Qt.callLater(syncDrawerParent)
++    Component.onCompleted: {
++      originalParent = parent
++      originalWindow = root.slotWindow(slot)
++      root.registerModuleSlot(slot)
++      Qt.callLater(function() {
++        if (!slot.originalWindow) slot.originalWindow = root.slotWindow(slot)
++        slot.syncDrawerParent()
++      })
++    }
++
++    Loader {
++      id: drawerLoader
++      active: slot.drawerController && slot.originalParent && slot.originalParent.visible
++      sourceComponent: Component { DrawerPanel { controllerSlot: slot } }
++    }
+     Component.onDestruction: {
+       if (root.barDragSource === slot) root.clearBarDrag()
+       root.unregisterModuleSlot(slot)
+@@ -1962,6 +2173,8 @@
+         var wasDragging = dragging
+         var targetSlot = root.barDragTarget
+         var afterTarget = root.barDragAfter
++        var releasePoint = slot.mapToItem(null, mouse.x, mouse.y)
++        var sourceWindow = root.barDragWindow
+ 
+         if (wasDragging) suppressClick = true
+ 
+@@ -1969,7 +2182,7 @@
+         root.clearBarDrag()
+ 
+         if (wasDragging && targetSlot) {
+-          root.dropBarModuleAtTarget(slot, targetSlot, afterTarget)
++          root.dropBarModuleAtTarget(slot, targetSlot, afterTarget, releasePoint, sourceWindow)
+           mouse.accepted = true
+         } else if (!wasDragging) {
+           mouse.accepted = false
+--- a/shell/Ui/KeyboardPanel.qml
++++ b/shell/Ui/KeyboardPanel.qml
+@@ -47,6 +47,8 @@
+   property var borderSpec: Border.surfaceSpec("popups", "border", Color.popups.border, Math.max(1, Style.space(2)))
+   property bool centerOnBar: false
+   property bool open: false
++  // Hosts retaining popup descendants keep an invisible, input-empty parent.
++  property bool retainWindow: false
+   property int gap: Style.gapsOut  // distance between bar edge and panel
+   property bool popoutSwitching: false
+   property bool popoutSwitchClosing: false
+@@ -78,7 +80,7 @@
+   // --- screen + lifetime ---------------------------------------------------
+ 
+   screen: anchorWindow ? anchorWindow.screen : null
+-  visible: open || card.opacity > 0 || popoutSwitching
++  visible: open || card.opacity > 0 || popoutSwitching || retainWindow
+   color: "transparent"
+   exclusionMode: ExclusionMode.Ignore
+ 
+@@ -122,8 +124,8 @@
+     return Math.max(bar.barSize, actual) + root.gap
+   }
+   mask: Region {
+-    width: root.screenW
+-    height: root.screenH
++    width: root.retainWindow && !root.open ? 0 : root.screenW
++    height: root.retainWindow && !root.open ? 0 : root.screenH
+   }
+ 
+   // Track every layout change between the bar's contentItem and the
+@@ -189,8 +191,9 @@
+   // parallel axis (along the bar) the anchor item's reported position is
+   // still consistent with the bar content origin, so it's accurate for
+   // centering the card under the icon.
+-  readonly property real barW: anchorWindow ? anchorWindow.width : screenW
+-  readonly property real barH: anchorWindow ? anchorWindow.height : 0
++  readonly property bool drawerAnchor: !!anchorWindow && "pluginDrawerSurface" in anchorWindow && anchorWindow.pluginDrawerSurface === true
++  readonly property real barW: anchorWindow ? (drawerAnchor ? anchorWindow.drawerBarWidth : anchorWindow.width) : 0
++  readonly property real barH: anchorWindow ? (drawerAnchor ? anchorWindow.drawerBarHeight : anchorWindow.height) : 0
+   readonly property point cardOrigin: {
+     if (!anchorItem || !bar) return Qt.point(margin, margin)
+     var x = 0, y = 0
+@@ -306,8 +309,14 @@
+       for (var i = targets.length - 1; i >= 0; i--) {
+         var target = targets[i]
+         if (!target || !target.triggerPress || target.visible === false || target.opacity === 0 || !target.mapToItem) continue
+-        if (root.bar.targetBelongsToWindow && !root.bar.targetBelongsToWindow(target, root.anchorWindow)) continue
+-        var pos = root.anchorWindow.itemPosition(target)
++        // A nested drawer popup is anchored to a fullscreen surface; visible
++        // bar targets still belong to the original thin bar on this screen.
++        var targetWindow = root.drawerAnchor && target.QsWindow ? target.QsWindow.window : root.anchorWindow
++        if (!targetWindow) continue
++        if (root.drawerAnchor && (targetWindow === root.anchorWindow || targetWindow.screen !== root.screen ||
++            targetWindow.width !== root.barW || targetWindow.height !== root.barH)) continue
++        if (root.bar.targetBelongsToWindow && !root.bar.targetBelongsToWindow(target, targetWindow)) continue
++        var pos = targetWindow.itemPosition(target)
+         if (p.x >= pos.x && p.x <= pos.x + target.width && p.y >= pos.y && p.y <= pos.y + target.height) return target
+       }
+       return null
+--- a/shell/Ui/PopupCard.qml
++++ b/shell/Ui/PopupCard.qml
+@@ -27,8 +27,9 @@
+   readonly property bool containsMouse: cardHover.hovered
+   readonly property real screenW: popupScreen ? popupScreen.width : 0
+   readonly property real screenH: popupScreen ? popupScreen.height : 0
+-  readonly property real barW: anchorWindow ? anchorWindow.width : 0
+-  readonly property real barH: anchorWindow ? anchorWindow.height : 0
++  readonly property bool drawerAnchor: !!anchorWindow && "pluginDrawerSurface" in anchorWindow && anchorWindow.pluginDrawerSurface === true
++  readonly property real barW: anchorWindow ? (drawerAnchor ? anchorWindow.drawerBarWidth : anchorWindow.width) : 0
++  readonly property real barH: anchorWindow ? (drawerAnchor ? anchorWindow.drawerBarHeight : anchorWindow.height) : 0
+   readonly property real availableCardWidth: screenW > 0
+     ? Math.max(120, screenW - ((bar && (bar.position === "left" || bar.position === "right")) ? barW : 0) - root.margin * 2)
+     : 0
+@@ -116,6 +117,13 @@
+       var window = target.QsWindow.window
+       if (!window) return
+ 
++      if (root.drawerAnchor) {
++        var drawerPoint = window.contentItem.mapFromItem(target, localX, localY)
++        popupAnchor.rect.x = Math.round(Math.max(root.margin, Math.min(drawerPoint.x, window.width - popupWidth - root.margin)))
++        popupAnchor.rect.y = Math.round(Math.max(root.margin, Math.min(drawerPoint.y, window.height - popupHeight - root.margin)))
++        return
++      }
++
+       if (root.centerOnBar) {
+         var cx = 0;
+         var cy = 0;

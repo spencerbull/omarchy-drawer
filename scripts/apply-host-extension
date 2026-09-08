@@ -1,0 +1,45 @@
+#!/bin/bash
+set -euo pipefail
+
+if (( $# != 1 )); then
+  echo "Usage: $0 /absolute/path/to/omarchy-development-checkout" >&2
+  exit 2
+fi
+
+checkout=$(realpath -e -- "$1")
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+patch_file="$script_dir/../integration/stock-bar-drawer.patch"
+case "$checkout" in
+  /usr/share|/usr/share/*)
+    echo "Refusing to patch package-managed /usr/share files. Use a development checkout." >&2
+    exit 2
+    ;;
+esac
+if [[ $(git -C "$checkout" rev-parse --show-toplevel) != "$checkout" ]]; then
+  echo "The argument must be the root of an Omarchy Git checkout." >&2
+  exit 2
+fi
+files=(shell/plugins/bar/Bar.qml shell/Ui/PluginBarApi.qml shell/Ui/KeyboardPanel.qml shell/Ui/PopupCard.qml)
+for target in "${files[@]}"; do
+  if [[ ! -f $checkout/$target || -L $checkout/$target ]]; then
+    echo "Missing or symlinked host target: $target" >&2
+    exit 2
+  fi
+done
+
+if git -C "$checkout" apply --reverse --check "$patch_file" 2>/dev/null; then
+  echo "The stock-bar drawer extension is already applied."
+  exit 0
+fi
+
+for target in "${files[@]}"; do
+  if [[ -n $(git -C "$checkout" status --porcelain -- "$target") ]]; then
+    echo "Refusing to overwrite existing changes in $target." >&2
+    exit 2
+  fi
+done
+
+git -C "$checkout" apply --check "$patch_file"
+git -C "$checkout" apply "$patch_file"
+echo "Applied the stock-bar drawer extension to $checkout."
+echo "Review the diff before restarting the shell from that development checkout."
