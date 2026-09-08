@@ -18,7 +18,7 @@ Done criteria: focused state tests, plugin validation, independent review, rende
 - [x] 10 state tests; native plugin validation; offscreen QML at 520/360 px, including long name and no-op persistence.
 - [x] Independent reviewer /root/drawer_review found no-op save/long-name errors (fixed), host ordering/multi-screen close/center slot/popup switch issues (fixed), and missing hidden tooltips (fixed). Final review no new critical findings.
 - [x] Native Wayland fixture passes top/bottom/left/right: actual pointer drag both directions, same-instance service access, center-anchor hiding, original order, popup handoff, and closed input mask. Rendered panel visually inspected.
-- [ ] GitHub repository created via gh: https://github.com/spencerbull/omarchy-drawer (public). Final source push and CI pending.
+- [x] Published https://github.com/spencerbull/omarchy-drawer via gh. Hosted CI run 34278907743 passed state, metadata, shell syntax, exact-baseline host contract and installer checks.
 
 ## Live verification
 - Installed plugin from main; applied extension only to four previously clean files under active ~/omarchy. Unrelated dirty work preserved.
@@ -26,3 +26,9 @@ Done criteria: focused state tests, plugin validation, independent review, rende
 - Live Defaults persisted 20 hidden third-party IDs, zero omarchy.* IDs. Restore returned to Global with no hidden IDs.
 - Live panel screenshot inspected; subsequent close and shell ping passed.
 - Startup found stale queued callbacks; replaced with slot-owned Timer in 0395144. Restarted shell; no TypeError, invalid-context, ReferenceError, assignment or binding-loop errors in fresh logs.
+
+## Completion
+- Final native rerun passed all four orientations after lifecycle fix. Live shell ping and unchanged original configuration rechecked.
+- Installed clone now tracks the GitHub repository for normal plugin updates.
+- Independent state/host/review workers complete. Temporary state and host worktrees removed by parent after confirming clean status; branch commits retained.
+- Remaining maintenance constraint: stock-bar extension must be kept compatible with future Omarchy updates. No human gates pending.
