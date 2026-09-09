@@ -13,10 +13,11 @@ cp -- "$source_checkout/shell/plugins/bar/BarModel.js" "$test_checkout/shell/plu
 git -C "$test_checkout" init -q
 git -C "$test_checkout" add -- shell
 git -C "$test_checkout" -c user.name=Test -c user.email=test@example.invalid commit -qm baseline
+"$integration_dir/../scripts/apply-host-extension" --check "$test_checkout"
 "$integration_dir/../scripts/apply-host-extension" "$test_checkout"
 "$integration_dir/../scripts/apply-host-extension" "$test_checkout"
 node "$integration_dir/host-contract.test.cjs" "$test_checkout"
-git -C "$test_checkout" apply --reverse "$integration_dir/stock-bar-drawer.patch"
+"$integration_dir/../scripts/apply-host-extension" --remove "$test_checkout"
 printf '\n// Existing user change\n' >> "$test_checkout/shell/Ui/PluginBarApi.qml"
 expected=$(sha256sum "$test_checkout/shell/Ui/PluginBarApi.qml")
 if "$integration_dir/../scripts/apply-host-extension" "$test_checkout"; then

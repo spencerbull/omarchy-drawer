@@ -153,3 +153,22 @@ test('layout entries deduplicate instances and preserve original settings and se
     assert.deepEqual(json(model.entries(null)), []);
     assert.deepEqual(json(model.entries({ left: 'bad', center: [false, { id: '' }] })), []);
 });
+
+test('profile interface is versioned, detached and rejects unknown IDs', () => {
+    const state = model.createSpace(model.normalize(null), 'Writing');
+    const status = model.status(state, ids, true);
+    assert.equal(status.version, 1);
+    assert.equal(status.supported, true);
+    assert.equal(status.activeProfile, state.activeSpace);
+    status.profiles[0].name = 'changed';
+    assert.equal(state.spaces[0].name, 'Global');
+    assert.equal(model.hasProfile(state, 'missing'), false);
+    assert.equal(model.knownWidget(ids, 'missing'), false);
+    assert.equal(model.knownWidget(ids, model.CONTROLLER_ID), false);
+});
+
+test('large visibility sets preserve prototype-like IDs and deduplicate', () => {
+    const catalog = ['__proto__', 'constructor'].concat(Array.from({length: 4094}, (_, i) => 'plugin.' + i));
+    const state = model.normalize({spaces: [{id: 'global', hidden: catalog}]});
+    assert.equal(model.hiddenIds(state, catalog.concat(catalog)).length, 4096);
+});
