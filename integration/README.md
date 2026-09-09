@@ -19,3 +19,21 @@ The host supplies a bounded, scrollable `KeyboardPanel`, loading the controller'
 ## Verification
 
 Run `node integration/host-contract.test.cjs /path/to/patched/omarchy` for focused drag and capability tests, and `integration/test-apply.sh` for application, idempotence, and dirty-file preservation. Real compositor testing remains necessary for reparented widgets, popup handoff, dragging across surfaces, both bar orientations, and multiple monitors. These checks do not replace that evidence.
+
+### API 1 contract
+
+The proposed stock-bar extension exposes `drawerApiVersion: 1`. This is a local
+host proposal, not an accepted upstream API. No authentication or foreign plugin
+service object is exposed. Drawer uses only its existing stock-bar facade.
+
+`omarchy-shell spencerbull.drawer status` returns JSON with `version`, `supported`,
+`mode`, `activeProfile`, `profiles` (id/name pairs), and `hiddenIds`.
+`selectProfile <id>` and `setWidgetVisible <id> <bool>` return false for unknown IDs.
+These operations change Drawer-owned visibility state, never plugin activation
+or bar ordering. The state is global across monitors; opening follows host screen
+selection. Existing open/close/defaults/all/restore commands remain available.
+
+Use `scripts/apply-host-extension --check /absolute/checkout` before an update.
+Use `--remove` to reverse this exact patch. A divergent patch is refused rather
+than guessed at. Removing the host extension keeps profile settings and makes
+Drawer unsupported; restore a compatible extension to use them again.

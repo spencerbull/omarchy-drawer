@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+action=apply
+if [[ ${1:-} == --check || ${1:-} == --remove ]]; then action=${1#--}; shift; fi
 if (( $# != 1 )); then
-  echo "Usage: $0 /absolute/path/to/omarchy-development-checkout" >&2
+  echo "Usage: $0 [--check|--remove] /absolute/path/to/omarchy-development-checkout" >&2
   exit 2
 fi
 
@@ -28,8 +30,18 @@ for target in "${files[@]}"; do
 done
 
 if git -C "$checkout" apply --reverse --check "$patch_file" 2>/dev/null; then
-  echo "The stock-bar drawer extension is already applied."
+  if [[ $action == remove ]]; then
+    git -C "$checkout" apply --reverse "$patch_file"
+    echo "Removed the exact stock-bar drawer extension."
+    exit 0
+  fi
+  echo "The stock-bar drawer extension is already applied (API 1)."
   exit 0
+fi
+
+if [[ $action == remove ]]; then
+  echo "Extension differs from this patch or is absent; refusing removal." >&2
+  exit 2
 fi
 
 for target in "${files[@]}"; do
@@ -40,6 +52,10 @@ for target in "${files[@]}"; do
 done
 
 git -C "$checkout" apply --check "$patch_file"
+if [[ $action == check ]]; then
+  echo "Compatible checkout; API 1 extension can be applied."
+  exit 0
+fi
 git -C "$checkout" apply "$patch_file"
 echo "Applied the stock-bar drawer extension to $checkout."
 echo "Review the diff before restarting the shell from that development checkout."

@@ -15,11 +15,14 @@ function validId(value) {
 
 function uniqueIds(values) {
     var result = [];
+    var seen = Object.create(null);
     if (!Array.isArray(values)) return result;
     for (var i = 0; i < values.length && result.length < MAX_IDS; i++) {
         var id = values[i];
-        if (validId(id) && id !== CONTROLLER_ID && result.indexOf(id) === -1)
+        if (validId(id) && id !== CONTROLLER_ID && !seen[id]) {
             result.push(id);
+            seen[id] = true;
+        }
     }
     return result;
 }
@@ -153,7 +156,13 @@ function setHidden(state, id, hidden, ids) {
 
 function hiddenIds(state, ids) {
     var next = normalize(state);
-    return uniqueIds(ids).filter(function(id) { return !visibleNormalized(next, id); });
+    var hidden = Object.create(null);
+    activeSpace(next).hidden.forEach(function(id) { hidden[id] = true; });
+    return uniqueIds(ids).filter(function(id) {
+        if (next.mode === "all") return false;
+        if (next.mode === "defaults") return id.indexOf("omarchy.") !== 0;
+        return hidden[id] === true;
+    });
 }
 
 // Visibility is per plugin id even when the layout contains several instances.
@@ -175,4 +184,19 @@ function entries(layout) {
         }
     }
     return result;
+}
+
+// Versioned scalar-only integration. No plugin/service objects cross IPC.
+function status(state, ids, supported) {
+    var next = normalize(state);
+    return { version: 1, supported: supported === true, mode: next.mode,
+        activeProfile: next.activeSpace,
+        profiles: next.spaces.map(function(space) { return { id: space.id, name: space.name }; }),
+        hiddenIds: hiddenIds(next, ids) };
+}
+function hasProfile(state, id) {
+    return normalize(state).spaces.some(function(space) { return space.id === id; });
+}
+function knownWidget(ids, id) {
+    return validId(id) && id !== CONTROLLER_ID && uniqueIds(ids).indexOf(id) !== -1;
 }

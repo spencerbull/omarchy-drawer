@@ -20,6 +20,7 @@ ShellRoot {
     property color background: Color.background
     property color urgent: Color.accent
     property bool foregroundAnimationEnabled: false
+    property int drawerApiVersion: 1
     property bool drawerSupported: true
     property var layoutConfig: ({left: [{id: "omarchy.menu"}, {id: "omarchy.workspaces"}], center: [{id: "omarchy.clock"}, {id: "omarchy.weather"}], right: [{id: "37signals.hey"}, {id: "hass"}, {id: "robzolkos.github"}, {id: "spencerbull.drawer"}]})
     property var shell: QtObject {

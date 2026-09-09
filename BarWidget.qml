@@ -8,7 +8,7 @@ BarWidget {
   id: root
   moduleName: "spencerbull.drawer"
   property bool opened: false
-  readonly property bool supported: bar && typeof bar.setDrawerOpen === "function" && bar.drawerSupported === true
+  readonly property bool supported: bar && typeof bar.setDrawerOpen === "function" && bar.drawerSupported === true && bar.drawerApiVersion === 1
   readonly property var state: Model.normalize(settings.drawerState)
   readonly property var catalog: Model.entries(bar ? bar.layoutConfig : {})
   readonly property var widgetIds: catalog.map(function(item) { return item.id })
@@ -50,11 +50,17 @@ BarWidget {
   }
   function setMode(mode) { save(Model.setMode(state, mode)) }
   function toggleDefaults() { save(Model.toggleDefaults(state)) }
-  function setHidden(id, hidden) { save(Model.setHidden(state, id, hidden, widgetIds)) }
+  function setHidden(id, hidden) {
+    if (!Model.knownWidget(widgetIds, id)) return false
+    return save(Model.setHidden(state, id, hidden, widgetIds))
+  }
   function acceptBarDrop(id) { if (id !== moduleName) setHidden(id, true) }
   function restoreBarWidget(id) { setHidden(id, false) }
   function createSpace(name) { save(Model.createSpace(state, name)) }
-  function selectSpace(id) { save(Model.selectSpace(state, id)) }
+  function selectSpace(id) {
+    if (!Model.hasProfile(state, id)) return false
+    return save(Model.selectSpace(state, id))
+  }
   function renameSpace(id, name) { save(Model.renameSpace(state, id, name)) }
   function deleteSpace(id) { save(Model.deleteSpace(state, id)) }
   function open() {
@@ -107,6 +113,9 @@ BarWidget {
   }
   IpcHandler {
     target: "spencerbull.drawer"
+    function status(): string { return JSON.stringify(Model.status(root.state, root.widgetIds, root.supported)) }
+    function selectProfile(id: string): bool { return root.selectSpace(id) }
+    function setWidgetVisible(id: string, visible: bool): bool { return root.setHidden(id, !visible) }
     function open(): void { root.open() }
     function close(): void { root.close() }
     function defaults(): void { root.toggleDefaults() }

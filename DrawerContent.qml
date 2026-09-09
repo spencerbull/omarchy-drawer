@@ -102,36 +102,47 @@ Column {
     onTextChanged: root.search = text.toLowerCase()
     background: Rectangle { color: Qt.alpha(Color.foreground, 0.05); radius: Style.space(6); border.color: Qt.alpha(Color.foreground, 0.14) }
   }
-  Flickable {
+  ListView {
+    id: list
     width: parent.width
-    height: Math.min(Style.space(180), list.implicitHeight)
-    contentHeight: list.implicitHeight
+    height: Math.min(Style.space(180), contentHeight)
     clip: true
+    spacing: Style.space(4)
+    reuseItems: true
+    activeFocusOnTab: true
+    keyNavigationEnabled: true
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar {}
-    Column {
-      id: list
-      width: parent.width
-      spacing: Style.space(4)
-      Repeater {
-        model: controller.catalog.filter(function(row) { return row.id !== controller.moduleName && (row.id + " " + controller.displayName(row.id)).toLowerCase().indexOf(root.search) !== -1 })
-        RowLayout {
-          required property var modelData
-          width: list.width
-          Text {
-            Layout.fillWidth: true
-            text: controller.displayName(modelData.id)
-            textFormat: Text.PlainText
-            color: Color.foreground; font.family: Style.font.family; font.pixelSize: Style.font.body
-            elide: Text.ElideMiddle
-          }
-          DrawerButton {
-            readonly property bool inBar: Model.visible(controller.state, modelData.id)
-            text: inBar ? "To drawer" : "To bar"
-            Accessible.name: text + ": " + controller.displayName(modelData.id)
-            onClicked: controller.setHidden(modelData.id, inBar)
-          }
-        }
+    model: controller.catalog.filter(function(row) { return row.id !== controller.moduleName && (row.id + " " + controller.displayName(row.id)).toLowerCase().indexOf(root.search) !== -1 })
+    Keys.onReturnPressed: {
+      if (currentIndex >= 0 && currentIndex < count) {
+        var id = model[currentIndex].id
+        controller.setHidden(id, Model.visible(controller.state, id))
+      }
+    }
+    Keys.onSpacePressed: {
+      if (currentIndex >= 0 && currentIndex < count) {
+        var id = model[currentIndex].id
+        controller.setHidden(id, Model.visible(controller.state, id))
+      }
+    }
+    delegate: RowLayout {
+      required property var modelData
+      required property int index
+      width: list.width
+      Text {
+        Layout.fillWidth: true
+        text: controller.displayName(modelData.id)
+        textFormat: Text.PlainText
+        color: Color.foreground; font.family: Style.font.family; font.pixelSize: Style.font.body
+        font.bold: list.activeFocus && list.currentIndex === index
+        elide: Text.ElideMiddle
+      }
+      DrawerButton {
+        readonly property bool inBar: Model.visible(controller.state, modelData.id)
+        text: inBar ? "To drawer" : "To bar"
+        Accessible.name: text + ": " + controller.displayName(modelData.id)
+        onClicked: { list.currentIndex = index; controller.setHidden(modelData.id, inBar) }
       }
     }
   }

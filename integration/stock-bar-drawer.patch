@@ -2,11 +2,12 @@ diff --git a/shell/Ui/PluginBarApi.qml b/shell/Ui/PluginBarApi.qml
 index 03c748b..58d8b95 100644
 --- a/shell/Ui/PluginBarApi.qml
 +++ b/shell/Ui/PluginBarApi.qml
-@@ -39,6 +39,14 @@ QtObject {
+@@ -39,6 +39,15 @@ QtObject {
    property var _targetBelongsToWindow: null
    property var _moduleWidgets: null
    property var _run: null
 +  // Host-owned drawers expose no widget or service objects to their controller.
++  readonly property int drawerApiVersion: 1
 +  readonly property bool drawerSupported: true
 +  property var drawerEntries: []
 +  property var _setDrawerOpen: null
