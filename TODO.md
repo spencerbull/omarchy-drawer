@@ -32,3 +32,14 @@ Done criteria: focused state tests, plugin validation, independent review, rende
 - Installed clone now tracks the GitHub repository for normal plugin updates.
 - Independent state/host/review workers complete. Temporary state and host worktrees removed by parent after confirming clean status; branch commits retained.
 - Remaining maintenance constraint: stock-bar extension must be kept compatible with future Omarchy updates. No human gates pending.
+
+## Native design pass and PR triage (2026-09-09)
+- Scope: read-only omabot review of Drawer PRs; redesign using stock Omarchy controls; no merge of contributor PRs or default-branch push.
+- Design stream: /home/sbull/worktrees/omarchy-drawer-native-design, branch drawer-native-design; parent owns edits and cleanup. Started from clean c051f57.
+- Review worker: /root/drawer_pr_review, read-only PR #1 at 307652eb5909ac073c7f21333455c2f6ee58a0be; contributor code not executed on coordinator.
+- [x] Review PR #1 and independently verify findings; recommendation in docs/pr-review-2026-09-09.md. Leave draft pending coordinated host upgrade and validation.
+- [x] Replace custom controls with native controls; compact space selection and plugin visibility rows.
+- [x] Ten state tests, plugin validation, 360/520 px pointer/keyboard QML checks and renders; native drag regression on all four edges passed.
+- [x] Independent /root/drawer_design_review found canceled-input focus and missing accessibility actions; fixed, including Cancel-button focus follow-up. Regression tests pass; mutation without cancellation fix fails. Assistive-client validation remains untested.
+- [ ] Publish reviewable branch/PR and verify CI.
+- [ ] Live visual verification and report exact source identity and remaining gates.
