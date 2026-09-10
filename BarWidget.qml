@@ -75,37 +75,21 @@ BarWidget {
   onSupportedChanged: Qt.callLater(reconcile)
   Component.onCompleted: Qt.callLater(reconcile)
 
-  implicitWidth: vertical ? barSize : buttons.implicitWidth
-  implicitHeight: vertical ? drawerButton.implicitHeight + defaultButton.implicitHeight : barSize
-  Grid {
-    id: buttons
-    columns: root.vertical ? 1 : 2
-    WidgetButton {
-      id: drawerButton
-      bar: root.bar
-      activeFocusOnTab: true
-      Accessible.role: Accessible.Button
-      Accessible.name: "Open plugin drawer"
-      Keys.onReturnPressed: root.toggle()
-      Keys.onSpacePressed: root.toggle()
-      text: "▤"
-      active: root.opened
-      tooltipText: root.supported ? "Drawer · " + root.viewName + " · " + root.hiddenIds.length + " tucked away\nDrag a plugin here to hide it" : "Drawer requires the stock-bar extension"
-      onPressed: function(button) { if (button === Qt.RightButton) root.setMode(root.state.mode === "all" ? "space" : "all"); else root.toggle() }
-    }
-    WidgetButton {
-      id: defaultButton
-      bar: root.bar
-      activeFocusOnTab: true
-      Accessible.role: Accessible.Button
-      Accessible.name: root.state.mode === "defaults" ? "Restore previous view" : "Show defaults"
-      Keys.onReturnPressed: root.toggleDefaults()
-      Keys.onSpacePressed: root.toggleDefaults()
-      text: root.state.mode === "defaults" ? "↶" : "◉"
-      active: root.state.mode === "defaults"
-      tooltipText: root.state.mode === "defaults" ? "Restore previous view" : "Show Omarchy defaults only"
-      onPressed: root.toggleDefaults()
-    }
+  implicitWidth: vertical ? barSize : drawerButton.implicitWidth
+  implicitHeight: vertical ? drawerButton.implicitHeight : barSize
+  // One button: the view (Space, Defaults, All) is chosen inside the drawer.
+  WidgetButton {
+    id: drawerButton
+    bar: root.bar
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.name: "Open plugin drawer"
+    Keys.onReturnPressed: root.toggle()
+    Keys.onSpacePressed: root.toggle()
+    text: "▤"
+    active: root.opened || root.state.mode !== "space"
+    tooltipText: root.supported ? "Drawer · " + root.viewName + " · " + root.hiddenIds.length + " tucked away\nDrag a plugin here to hide it" : "Drawer requires the stock-bar extension"
+    onPressed: function(button) { if (button === Qt.RightButton) root.setMode(root.state.mode === "all" ? "space" : "all"); else root.toggle() }
   }
   IpcHandler {
     target: "spencerbull.drawer"
