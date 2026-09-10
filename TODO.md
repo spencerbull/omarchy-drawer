@@ -43,3 +43,4 @@ Done criteria: focused state tests, plugin validation, independent review, rende
 - [x] Independent /root/drawer_design_review found canceled-input focus and missing accessibility actions; fixed, including Cancel-button focus follow-up. Regression tests pass; mutation without cancellation fix fails. Assistive-client validation remains untested.
 - [ ] Publish reviewable branch/PR and verify CI.
 - [ ] Live visual verification and report exact source identity and remaining gates.
+- Live restart exposed pre-existing saved-state loss: host QVariant sequences failed the model's strict array checks. Reproduced in native fixture; JSON materialization at the plugin boundary fixes it. All four native orientations and both QML widths pass with preconfigured profiles. Removing the fix fails the new regression. Independent reviewer found no issues in the narrow follow-up.
