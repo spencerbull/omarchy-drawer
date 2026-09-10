@@ -41,6 +41,7 @@ Done criteria: focused state tests, plugin validation, independent review, rende
 - [x] Replace custom controls with native controls; compact space selection and plugin visibility rows.
 - [x] Ten state tests, plugin validation, 360/520 px pointer/keyboard QML checks and renders; native drag regression on all four edges passed.
 - [x] Independent /root/drawer_design_review found canceled-input focus and missing accessibility actions; fixed, including Cancel-button focus follow-up. Regression tests pass; mutation without cancellation fix fails. Assistive-client validation remains untested.
-- [ ] Publish reviewable branch/PR and verify CI.
-- [ ] Live visual verification and report exact source identity and remaining gates.
+- [x] Published design PR #2; both push and PR CI checks passed for runtime commit 2215233 (runs 34421554318 / 34421558331).
+- [x] Live verifier /root/drawer_live_verify opened the native panel on installed 2215233 after a shell restart cleared stale QML. Parent inspected private panel capture: native controls, 14 in bar / 20 in drawer, no clipping. Full configuration semantically equals the prework backup; shell ping and compositor config checks pass. No Drawer QML errors in fresh logs.
+- Runtime remains installed on drawer-native-design for preview; main is unchanged. No contributor PR merged. PR #2 awaits explicit merge approval. Multi-monitor behavior was not rerun (one monitor currently attached); assistive-client interaction remains unverified. All three read-only workers completed; parent retains the design worktree for review.
 - Live restart exposed pre-existing saved-state loss: host QVariant sequences failed the model's strict array checks. Reproduced in native fixture; JSON materialization at the plugin boundary fixes it. All four native orientations and both QML widths pass with preconfigured profiles. Removing the fix fails the new regression. Independent reviewer found no issues in the narrow follow-up.
