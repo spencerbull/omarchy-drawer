@@ -46,7 +46,8 @@ ShellRoot {
     Rectangle {
       color: Color.background
       id: capture
-      anchors.fill: parent
+      width: parent.width
+      height: content.height + 40
       Plugin.DrawerContent { id: content; x: 20; y: 20; width: parent.width - 40; controller: widget }
     }
     TestCase {
@@ -70,6 +71,87 @@ ShellRoot {
         widget.renameSpace(widget.state.activeSpace, "A long project name to check narrow panels and safe text clips")
         widget.renameSpace(widget.state.activeSpace, widget.spaceName)
         compare(widget.error, "")
+        // Exercise the actual redesigned controls, including narrow-panel input.
+        var savedSpace = widget.state.activeSpace
+        var picker = findChild(content, "spacePicker")
+        picker.open()
+        wait(50)
+        keyClick(Qt.Key_Up)
+        keyClick(Qt.Key_Return)
+        compare(widget.state.activeSpace, "global")
+        widget.selectSpace(savedSpace)
+        compare(picker.value, savedSpace)
+
+        mouseClick(findChild(content, "addSpace"))
+        verify(content.editing)
+        var input = findChild(content, "spaceNameInput")
+        input.text = "Reading"
+        keyClick(Qt.Key_Return)
+        compare(widget.spaceName, "Reading")
+        verify(!content.editing)
+        mouseClick(findChild(content, "addSpace"))
+        input.text = "Canceled space"
+        wait(50)
+        mouseClick(findChild(content, "cancelEditing"))
+        verify(!content.editing)
+        verify(findChild(content, "pluginSearch").activeFocus)
+        keyClick(Qt.Key_Return)
+        compare(widget.spaceName, "Reading")
+        mouseClick(findChild(content, "renameSpace"))
+        input.text = "Canceled name"
+        keyClick(Qt.Key_Escape)
+        verify(!content.editing)
+        verify(!input.activeFocus)
+        content.saveSpace()
+        compare(widget.spaceName, "Reading")
+        keyClick(Qt.Key_Return)
+        compare(widget.spaceName, "Reading")
+        keyClick(Qt.Key_Escape)
+        mouseClick(findChild(content, "renameSpace"))
+        input.text = "Research"
+        keyClick(Qt.Key_Return)
+        compare(widget.spaceName, "Research")
+
+        var search = findChild(content, "pluginSearch")
+        search.text = "hey"
+        wait(50)
+        compare(content.filteredPlugins.length, 1)
+        var row = findChild(content, "pluginRow:37signals.hey")
+        verify(row.inBar)
+        mouseClick(row)
+        verify(!row.inBar)
+        keyClick(Qt.Key_Space)
+        verify(row.inBar)
+        search.text = "no matching plugin"
+        compare(content.filteredPlugins.length, 0)
+        search.text = ""
+
+        mouseClick(findChild(content, "removeSpace"))
+        wait(50)
+        mouseClick(findChild(content, "cancelRemoval"))
+        compare(widget.spaceName, "Research")
+        mouseClick(findChild(content, "removeSpace"))
+        wait(50)
+        mouseClick(findChild(content, "confirmRemoval"))
+        compare(widget.state.activeSpace, "global")
+        widget.selectSpace(savedSpace)
+        compare(picker.value, savedSpace)
+        var modes = findChild(content, "viewMode:space")
+        modes.forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        keyClick(Qt.Key_Return)
+        compare(widget.state.mode, "defaults")
+        keyClick(Qt.Key_Return)
+        compare(widget.state.mode, "space")
+        keyClick(Qt.Key_Right)
+        keyClick(Qt.Key_Return)
+        compare(widget.state.mode, "all")
+        keyClick(Qt.Key_Return)
+        compare(widget.state.mode, "space")
+        compare(widget.hiddenIds.length, 1)
+        widget.renameSpace(savedSpace, "Writing")
+        window.contentItem.forceActiveFocus()
+        mouseMove(window.contentItem, 2, 780)
         widget.open()
         verify(widget.opened)
         verify(content.height < window.height - 40)

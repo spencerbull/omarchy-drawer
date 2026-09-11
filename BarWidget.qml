@@ -9,7 +9,9 @@ BarWidget {
   moduleName: "spencerbull.drawer"
   property bool opened: false
   readonly property bool supported: bar && typeof bar.setDrawerOpen === "function" && bar.drawerSupported === true
-  readonly property var state: Model.normalize(settings.drawerState)
+  // Host settings can contain QVariant-backed sequences, which fail Array.isArray.
+  // Materialize plain JSON before the model validates saved spaces and hidden IDs.
+  readonly property var state: Model.normalize(JSON.parse(JSON.stringify(settings.drawerState || {})))
   readonly property var catalog: Model.entries(bar ? bar.layoutConfig : {})
   readonly property var widgetIds: catalog.map(function(item) { return item.id })
   readonly property var hiddenIds: Model.hiddenIds(state, widgetIds)

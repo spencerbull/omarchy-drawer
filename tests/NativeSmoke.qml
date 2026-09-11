@@ -12,7 +12,14 @@ ShellRoot {
   QtObject { id: service; property int count: 0 }
   QtObject {
     id: hostShell
-    property var config: ({bar: {position: Quickshell.env("DRAWER_POSITION") || "bottom", transparent: false, centerAnchor: "omarchy.center", layout: {left: [], center: [{id:"omarchy.center"}], right: [{id: "test.widget", preserved: "keep me"}, {id: "omarchy.example"}, {id: "spencerbull.drawer", drawerController: true}]}}})
+    property var config: ({bar: {position: Quickshell.env("DRAWER_POSITION") || "bottom", transparent: false, centerAnchor: "omarchy.center", layout: {left: [], center: [{id:"omarchy.center"}], right: [{id: "test.widget", preserved: "keep me"}, {id: "omarchy.example"}, {
+      id: "spencerbull.drawer", drawerController: true,
+      drawerState: {version: 1, activeSpace: "space-1", mode: "space", returnMode: "all", spaces: [
+        {id: "global", name: "Global", hidden: ["omarchy.example"]},
+        {id: "space-1", name: "Writing", hidden: ["test.widget"]}
+      ]},
+      hiddenWidgets: ["test.widget"]
+    }]}}})
     function pluginShellForId(id) { return scopedShell }
     function mutateShellConfig(mutator) {
       var next = JSON.parse(JSON.stringify(config)); mutator(next); config = next
@@ -87,6 +94,17 @@ ShellRoot {
     function test_native_drag() {
       console.log("NATIVE_STAGE start")
       wait(500)
+      // Real host injection wraps nested settings in QVariant sequences. Saved
+      // visibility and named spaces must survive before any user interaction.
+      var restored = slot("spencerbull.drawer").activeItem
+      compare(restored.state.activeSpace, "space-1")
+      compare(restored.spaceName, "Writing")
+      compare(restored.state.spaces.length, 2)
+      compare(restored.state.spaces[0].hidden.join(","), "omarchy.example")
+      compare(restored.hiddenIds.join(","), "test.widget")
+      compare(restored.state.returnMode, "all")
+      restored.restoreBarWidget("test.widget")
+      wait(150)
       var baseline = JSON.parse(JSON.stringify(hostShell.config))
       var transient = JSON.parse(JSON.stringify(baseline))
       transient.bar.layout.right = []

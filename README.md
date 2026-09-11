@@ -5,10 +5,14 @@ Keep a few plugins in the bar and tuck the rest into a drawer. Save different se
 - Drag a plugin onto **▤** to move it into the drawer. Drag it back to the bar to show it again.
 - Open **▤** to use tucked-away widgets and choose what appears in the bar.
 - Click **◉** beside the drawer for **Defaults**: only your configured `omarchy.*` widgets remain in the bar. Click **↶** to restore the previous view.
-- **Show all** temporarily reveals all configured widgets. **Restore space** returns to the saved selection.
+- **All** temporarily reveals all configured widgets. Click it again, or choose **Space**, to restore the saved selection.
 - **Global** starts with your current arrangement. Create named **spaces** to save independent visibility choices. These are task profiles, separate from Hyprland workspaces.
 
 Hiding a widget preserves its configuration, bar position, running instance, and services. Visibility applies to every instance of a plugin ID. The drawer itself stays visible. New plugins appear in your current space until you tuck them away.
+
+The panel uses Omarchy's shared controls and theme: a compact space selector, inline space actions, and searchable **Show in bar** switches. Click a plugin row or focus it with Tab and press Space to change its visibility. The view buttons and space selector also support keyboard navigation.
+
+![Drawer panel with native Omarchy controls](docs/drawer-preview.png)
 
 ## Requirements and installation
 
