@@ -18,10 +18,10 @@ index 03c748b..58d8b95 100644
  
    function setCenterHoverRevealSuppressed(value) {
 diff --git a/shell/plugins/bar/Bar.qml b/shell/plugins/bar/Bar.qml
-index be9fece..31c8b32 100644
+index be9fece..77d9d3b 100644
 --- a/shell/plugins/bar/Bar.qml
 +++ b/shell/plugins/bar/Bar.qml
-@@ -111,6 +111,102 @@ Item {
+@@ -111,6 +111,104 @@ Item {
    property var moduleSlots: []
    property var pluginBarApis: ({})
    property var pluginObjectOwners: []
@@ -100,6 +100,8 @@ index be9fece..31c8b32 100644
 +    for (var i = 0; i < moduleSlots.length; i++) {
 +      var slot = moduleSlots[i]
 +      if (slot.parent === host.widgetContainer && slot.originalParent) {
++        slot.x = 0
++        slot.y = 0
 +        slot.parent = slot.originalParent
 +        slot.restoreDrawerOrder()
 +      }
@@ -124,7 +126,7 @@ index be9fece..31c8b32 100644
  
    Component {
      id: pluginBarApiComponent
-@@ -123,6 +219,7 @@ Item {
+@@ -123,6 +221,7 @@ Item {
  
    function bindPluginBarApi(api) {
      if (!api) return
@@ -132,7 +134,7 @@ index be9fece..31c8b32 100644
      api.foreground = Qt.binding(function() { return root.foreground })
      api.barForeground = Qt.binding(function() { return root.barForeground })
      api.background = Qt.binding(function() { return root.background })
-@@ -264,6 +361,7 @@ Item {
+@@ -264,6 +363,7 @@ Item {
            ? root.moduleWidgets(moduleName) : []
        },
        _run: function(command) { root.run(command) },
@@ -140,7 +142,7 @@ index be9fece..31c8b32 100644
        _setCenterHoverRevealSuppressed: function(value) {
          root.centerHoverRevealSuppressed = !!value
        }
-@@ -447,7 +545,7 @@ Item {
+@@ -447,7 +547,7 @@ Item {
  
      try {
        var slotPoint = slot.mapToItem(null, 0, 0)
@@ -149,7 +151,7 @@ index be9fece..31c8b32 100644
        var thickness = Style.spacing.xs
        if (vertical) {
          return {
-@@ -593,10 +691,12 @@ Item {
+@@ -593,10 +693,12 @@ Item {
      var delta = BarModel.inlineSettingsDelta(layoutConfig, next)
      if (delta) {
        applySettingsDelta(delta)
@@ -162,7 +164,7 @@ index be9fece..31c8b32 100644
    }
  
    function applySettingsDelta(delta) {
-@@ -606,7 +706,8 @@ Item {
+@@ -606,7 +708,8 @@ Item {
        var settings = entrySettings(change.entry)
        for (var s = 0; s < moduleSlots.length; s++) {
          var slot = moduleSlots[s]
@@ -172,7 +174,7 @@ index be9fece..31c8b32 100644
          var item = slot.activeItem
          if (item && "settings" in item) item.settings = settings
        }
-@@ -912,39 +1013,29 @@ Item {
+@@ -912,39 +1015,29 @@ Item {
  
    function moduleDropAtScene(scenePoint, sourceSlot) {
      var sourceWindow = root.slotWindow(sourceSlot) || root.barDragWindow
@@ -228,7 +230,7 @@ index be9fece..31c8b32 100644
      for (var i = 0; i < moduleSlots.length; i++) {
        var slot = moduleSlots[i]
        if (!slot || slot === sourceSlot || slot.region !== region || slot.moduleName !== name ||
-@@ -972,8 +1063,23 @@ Item {
+@@ -972,8 +1065,23 @@ Item {
      return ""
    }
  
@@ -253,7 +255,7 @@ index be9fece..31c8b32 100644
  
      var beforeName = afterTarget ? nextVisibleModuleName(targetSlot.region, targetSlot.moduleName, sourceSlot) : targetSlot.moduleName
      return dropBarModule(sourceSlot, targetSlot.region, beforeName)
-@@ -992,7 +1098,7 @@ Item {
+@@ -992,7 +1100,7 @@ Item {
    function moduleClickTargetAt(slot, localX, localY) {
      for (var i = clickTargets.length - 1; i >= 0; i--) {
        var target = clickTargets[i]
@@ -262,7 +264,7 @@ index be9fece..31c8b32 100644
  
        var targetPoint = { x: localX, y: localY }
        try {
-@@ -1283,69 +1389,7 @@ Item {
+@@ -1283,69 +1391,7 @@ Item {
        }
      }
  
@@ -333,7 +335,7 @@ index be9fece..31c8b32 100644
  
      Component {
        id: horizontalBar
-@@ -1570,12 +1614,17 @@ Item {
+@@ -1570,12 +1616,17 @@ Item {
            anchors.verticalCenter: centerAnchorModule.verticalCenter
          }
  
@@ -354,7 +356,7 @@ index be9fece..31c8b32 100644
          }
  
          ModuleList {
-@@ -1615,12 +1664,17 @@ Item {
+@@ -1615,12 +1666,17 @@ Item {
            anchors.horizontalCenter: centerAnchorModule.horizontalCenter
          }
  
@@ -375,7 +377,7 @@ index be9fece..31c8b32 100644
          }
  
          ModuleList {
-@@ -1745,7 +1799,7 @@ Item {
+@@ -1745,7 +1801,7 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -384,7 +386,7 @@ index be9fece..31c8b32 100644
            }
          }
        }
-@@ -1763,7 +1817,127 @@ Item {
+@@ -1763,7 +1819,127 @@ Item {
            ModuleSlot {
              required property var modelData
              entry: modelData
@@ -513,7 +515,7 @@ index be9fece..31c8b32 100644
            }
          }
        }
-@@ -1774,7 +1948,13 @@ Item {
+@@ -1774,7 +1950,13 @@ Item {
      id: slot
  
      required property var entry
@@ -528,7 +530,7 @@ index be9fece..31c8b32 100644
      readonly property string moduleName: root.entryId(entry)
      readonly property var moduleSettings: root.entrySettings(entry)
      readonly property string customType: root.customModuleType(entry)
-@@ -1817,7 +1997,56 @@ Item {
+@@ -1817,7 +1999,60 @@ Item {
      height: implicitHeight
      z: modulePointer.dragging ? 100 : 0
  
@@ -537,6 +539,10 @@ index be9fece..31c8b32 100644
 +      if (!originalParent) return
 +      var destination = drawerHost ? drawerHost.widgetContainer : originalParent
 +      if (parent === destination) return
++      // Flow sets both axes; Row/Column reset only their primary axis.
++      // Clear drawer offsets before returning, including the plain anchor Item.
++      x = 0
++      y = 0
 +      parent = destination
 +      if (!drawerHost) restoreDrawerOrder()
 +    }
@@ -586,7 +592,7 @@ index be9fece..31c8b32 100644
      Component.onDestruction: {
        if (root.barDragSource === slot) root.clearBarDrag()
        root.unregisterModuleSlot(slot)
-@@ -1962,6 +2191,8 @@ Item {
+@@ -1962,6 +2197,8 @@ Item {
          var wasDragging = dragging
          var targetSlot = root.barDragTarget
          var afterTarget = root.barDragAfter
@@ -595,7 +601,7 @@ index be9fece..31c8b32 100644
  
          if (wasDragging) suppressClick = true
  
-@@ -1969,7 +2200,7 @@ Item {
+@@ -1969,7 +2206,7 @@ Item {
          root.clearBarDrag()
  
          if (wasDragging && targetSlot) {

@@ -169,6 +169,44 @@ ShellRoot {
       wait(100)
       compare(demoSlot.region, "right")
       verify(bar.vertical ? demoSlot.mapToItem(null,0,0).y < slot("omarchy.example").mapToItem(null,0,0).y : demoSlot.mapToItem(null,0,0).x < slot("omarchy.example").mapToItem(null,0,0).x, "restored original order")
+      // A wrapped drawer assigns both axes. Row/Column only restore their
+      // primary axis, and the center anchor has no positioner at all.
+      var stockSlot = slot("omarchy.example")
+      var centerSlot = slot("omarchy.center")
+      var centerInstance = centerSlot.activeItem
+      var stockInstance = stockSlot.activeItem
+      var orders = [[stockSlot, centerSlot, demoSlot], [centerSlot, demoSlot, stockSlot]]
+      for (var pass = 0; pass < orders.length; pass++) {
+        var order = orders[pass]
+        for (var h = 0; h < order.length; h++) {
+          widget.setHidden(order[h].moduleName, true)
+          wait(100)
+        }
+        widget.open()
+        wait(200)
+        var container = controllerSlot.drawerPanel.widgetContainer
+        container.width = order[0].width + order[1].width + container.spacing
+        wait(150)
+        verify(order[1].x > 0, "drawer assigns a horizontal offset")
+        verify(order[2].y > 0, "drawer wraps onto another row")
+        widget.setMode("all")
+        wait(200)
+        console.log("NATIVE_RESTORED_GEOMETRY", pass, "center", centerSlot.x, centerSlot.y, "demo", demoSlot.x, demoSlot.y, "stock", stockSlot.x, stockSlot.y)
+        var barCaptured = false
+        var barItem = controllerSlot
+        while (barItem.parent && barItem.parent !== controllerSlot.originalWindow.contentItem) barItem = barItem.parent
+        barItem.grabToImage(function(result) {
+          result.saveToFile(Quickshell.env("DRAWER_NATIVE_IMAGE").replace(/\.png$/, "-restored-" + pass + ".png")); barCaptured = true
+        })
+        tryVerify(function() { return barCaptured }, 3000)
+        compare(centerSlot.x, 0, "center anchor clears drawer x")
+        compare(centerSlot.y, 0, "center anchor clears drawer y")
+        compare(bar.vertical ? demoSlot.x : demoSlot.y, 0, "restored widget clears perpendicular drawer offset")
+        compare(bar.vertical ? stockSlot.x : stockSlot.y, 0, "restored neighbor remains aligned")
+        compare(demoSlot.activeItem, originalInstance)
+        compare(centerSlot.activeItem, centerInstance)
+        compare(stockSlot.activeItem, stockInstance)
+      }
       widget.close()
       wait(200)
       verify(!widget.opened)
