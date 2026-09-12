@@ -14,6 +14,8 @@ The widget exposes `drawerContent` (a QML `Component`), writable `opened` boolea
 
 The host retains each canonical `ModuleSlot` and changes its visual parent to the appropriate per-screen drawer container. This visually filters the bar without removing layout entries, duplicating services, unregistering plugins, or rebuilding every controller on a settings change. Restoring returns the same instance to its original section. Dragging a visible widget directly onto the controller calls `acceptBarDrop`; adjacent drops still reorder. Dragging a hidden widget onto the bar calls `restoreBarWidget`, returning it to its saved position. Canceled and off-bar drops do nothing.
 
+Parent transfers clear both local coordinates before the destination lays out the widget. The drawer's wrapping Flow assigns both axes, while bar Rows and Columns only position one axis and the center anchor has no positioner. Keeping drawer offsets would leave restored widgets displaced or clipped.
+
 The host supplies a bounded, scrollable `KeyboardPanel`, loading the controller's component as its header and rendering the actual hidden widgets beneath it. Closing leaves hidden widgets and their window instantiated. The closed window has an empty input mask and no keyboard focus, so child popups can survive the normal popup handoff. `KeyboardPanel` and `PopupCard` use scalar bar dimensions exposed by the drawer surface for popup fitting, rather than mistaking its fullscreen window for the bar strip. Nested popup mapping uses the actual scene Item through `panelSurfaceItem`, since `KeyboardPanel.contentItem` is a list alias for supplied children. The stock tooltip popup is reused on the drawer surface, preserving native plugin hover labels.
 
 ## Verification
