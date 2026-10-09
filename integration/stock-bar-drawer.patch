@@ -584,8 +584,8 @@ index 84680cb5..4103925b 100644
 +      id: tooltipBubble
 +      implicitWidth: tooltipLabel.implicitWidth + 20
 +      implicitHeight: tooltipLabel.implicitHeight + 14
-+      color: Color.tooltip.background
-+      borderSpec: Border.surfaceSpec("tooltip", "border", Color.tooltip.border, 1)
++      color: Commons.Color.tooltip.background
++      borderSpec: Border.surfaceSpec("tooltip", "border", Commons.Color.tooltip.border, 1)
 +      radius: Style.cornerRadius
 +
 +      Text {
@@ -593,7 +593,7 @@ index 84680cb5..4103925b 100644
 +        textFormat: Text.PlainText
 +        anchors.centerIn: parent
 +        text: root.tooltipText
-+        color: Color.tooltip.text
++        color: Commons.Color.tooltip.text
 +        font.family: root.fontFamily
 +        font.pixelSize: Style.font.body
 +        horizontalAlignment: Text.AlignHCenter
@@ -642,7 +642,7 @@ index 84680cb5..4103925b 100644
 +          }
 +          Text {
 +            text: "TUCKED AWAY"
-+            color: Color.muted
++            color: Commons.Color.muted
 +            font.family: Style.font.family
 +            font.pixelSize: Style.font.body
 +          }
