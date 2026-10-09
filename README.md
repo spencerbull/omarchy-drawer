@@ -18,7 +18,7 @@ The panel uses Omarchy's shared controls and theme: a compact space selector, in
 
 This is an experimental plugin for the Quickshell-based Omarchy shell. It requires the included stock-bar drawer extension: the existing plugin API does not expose stock bar drag events. The extension keeps the built-in bar and its normal per-widget service capabilities.
 
-Use an Omarchy **development checkout**, not the package-owned `/usr/share/omarchy` directory. The extension is based on Omarchy commit `82652c8bdba65c05954fe6ebd961d90029250a5d`; the installer checks that the patch applies before changing anything.
+Use an Omarchy **development checkout**, not the package-owned `/usr/share/omarchy` directory. The extension is based on Omarchy commit `c352b62d`; the installer checks that the patch applies before changing anything.
 
 ```sh
 git clone https://github.com/spencerbull/omarchy-drawer.git

@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import Quickshell
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "stock" as Stock
 import "plugin" as Plugin
@@ -58,7 +59,7 @@ ShellRoot {
         open: demo.opened
         contentWidth: 240
         contentHeight: 120
-        Text { text: "Service panel"; color: Color.foreground }
+        Text { text: "Service panel"; color: Commons.Color.foreground }
       }
     }
   }

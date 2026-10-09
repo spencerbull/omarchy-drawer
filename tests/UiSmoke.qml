@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import QtTest
 import qs.Commons
+import qs.Commons as Commons
 import "plugin" as Plugin
 
 ShellRoot {
@@ -15,10 +16,10 @@ ShellRoot {
     property int barSize: 28
     property string position: "top"
     property string fontFamily: Style.font.family
-    property color barForeground: Color.foreground
-    property color foreground: Color.foreground
-    property color background: Color.background
-    property color urgent: Color.accent
+    property color barForeground: Commons.Color.foreground
+    property color foreground: Commons.Color.foreground
+    property color background: Commons.Color.background
+    property color urgent: Commons.Color.accent
     property bool foregroundAnimationEnabled: false
     property bool drawerSupported: true
     property var layoutConfig: ({left: [{id: "omarchy.menu"}, {id: "omarchy.workspaces"}], center: [{id: "omarchy.clock"}, {id: "omarchy.weather"}], right: [{id: "37signals.hey"}, {id: "hass"}, {id: "robzolkos.github"}, {id: "spencerbull.drawer"}]})
@@ -42,9 +43,9 @@ ShellRoot {
     visible: true
     implicitWidth: Number(Quickshell.env("DRAWER_TEST_WIDTH")) || 520
     implicitHeight: 820
-    color: Color.background
+    color: Commons.Color.background
     Rectangle {
-      color: Color.background
+      color: Commons.Color.background
       id: capture
       width: parent.width
       height: content.height + 40
