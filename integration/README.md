@@ -1,6 +1,6 @@
 # Stock-bar drawer extension
 
-`stock-bar-drawer.patch` adds the host mechanisms required by an ordinary third-party drawer plugin. It targets Omarchy commit `82652c8bdba65c05954fe6ebd961d90029250a5d` (the four target files were clean in the development checkout). It was generated from those exact files, not from a replacement bar or copied plugin service implementation.
+`stock-bar-drawer.patch` adds the host mechanisms required by an ordinary third-party drawer plugin. It targets Omarchy commit `c352b62d` (the four target files were clean in the development checkout). It was generated from those exact files, not from a replacement bar or copied plugin service implementation.
 
 Apply to an explicitly selected development checkout with `scripts/apply-host-extension /absolute/path/to/omarchy`. The script refuses `/usr/share`, symlinked targets, dirty target files, and patches that fail `git apply --check`. Re-running recognizes an already applied patch. It does not restart or install the shell. To undo, run `git -C /path/to/omarchy apply --reverse --check /path/to/plugin/integration/stock-bar-drawer.patch`, review the result, then repeat without `--check`; preserve any later work first.
 

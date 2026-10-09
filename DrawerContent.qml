@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui as Ui
 import "Model.js" as Model
 
@@ -63,7 +64,7 @@ Column {
     meta: (root.plugins.length - controller.hiddenIds.length) + " in bar · " + controller.hiddenIds.length + " in drawer"
     iconComponent: Text {
       text: "▤"
-      color: Color.foreground
+      color: Commons.Color.foreground
       font.family: Style.font.family
       font.pixelSize: Style.font.display
     }
@@ -183,7 +184,7 @@ Column {
         width: parent.width
         text: "Remove this space? Plugins and Global settings are kept."
         textFormat: Text.PlainText
-        color: Color.foreground
+        color: Commons.Color.foreground
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         wrapMode: Text.WordWrap
@@ -198,7 +199,7 @@ Column {
           Accessible.onPressAction: clicked()
           focusable: true
           bordered: true
-          foreground: Color.urgent
+          foreground: Commons.Color.urgent
           onClicked: root.finishRemoval(true)
         }
         Ui.Button {
@@ -274,7 +275,7 @@ Column {
               anchors.verticalCenter: parent.verticalCenter
               text: controller.displayName(pluginRow.modelData.id)
               textFormat: Text.PlainText
-              color: Color.foreground
+              color: Commons.Color.foreground
               font.family: Style.font.family
               font.pixelSize: Style.font.body
               elide: Text.ElideRight
@@ -303,7 +304,7 @@ Column {
       visible: root.filteredPlugins.length === 0
       width: parent.width
       text: root.plugins.length ? "No matching plugins" : "Add plugins to the bar to organize them here."
-      color: Qt.darker(Color.foreground, 1.4)
+      color: Qt.darker(Commons.Color.foreground, 1.4)
       font.family: Style.font.family
       font.pixelSize: Style.font.body
       wrapMode: Text.WordWrap
@@ -312,7 +313,7 @@ Column {
   Text {
     width: parent.width
     text: "Drag plugins onto ▤ to tuck them away."
-    color: Qt.darker(Color.foreground, 1.4)
+    color: Qt.darker(Commons.Color.foreground, 1.4)
     font.family: Style.font.family
     font.pixelSize: Style.font.caption
     wrapMode: Text.WordWrap
@@ -322,7 +323,7 @@ Column {
     width: parent.width
     text: controller.error
     textFormat: Text.PlainText
-    color: Color.urgent
+    color: Commons.Color.urgent
     wrapMode: Text.WordWrap
     font.family: Style.font.family
     font.pixelSize: Style.font.body
