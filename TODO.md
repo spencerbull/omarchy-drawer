@@ -1,5 +1,13 @@
 # Omarchy Drawer
 
+## Host rebase onto omacom/quattro f5006bd4 (2026-10-12)
+
+- Live tooltip reported the extension missing: the session ran the unpatched face-unlock worktree, and the patch no longer applied upstream because #15044 added lazy KeyboardPanel content beside our anchors.
+- Three-way rebased onto `f5006bd41a17`; added/removed lines are identical to the previous patch, only context moved. No ModuleSlot outside the patch assigns read-only `region`; #14431's beside-right center ModuleList uses the patched delegate.
+- CI had failed on main since #5 because it pinned `basecamp/omarchy@82652c8b`. Repinned to `omacom/omarchy@f5006bd4`.
+- Stock Bar.qml logs a `displayCutouts` binding loop without a display-cutouts file, patched or not; `test-native` ignores only that line.
+- Passed: 10 model tests, plugin validation, installer/idempotence/reverse/dirty preservation, host contracts, QML UI smoke, native fixture top/bottom/left/right.
+
 ## Missing host extension repair (2026-09-11)
 
 - Active host had advanced to `9f066b64` and all four drawer-extension target files were clean; `drawerSupported`, `setDrawerOpen`, and `drawerControllerFor` were absent. Installed plugin `114d543` remained present, so its support guard prevented opening. The action that removed the extension was not established.

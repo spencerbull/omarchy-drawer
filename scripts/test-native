@@ -22,4 +22,7 @@ logfile="$repo/.artifacts/native-${DRAWER_POSITION:-bottom}.log"
 DRAWER_NATIVE_IMAGE="$repo/.artifacts/native-${DRAWER_POSITION:-bottom}.png" timeout 18 qs -p "$fixture" --no-color > "$logfile" 2>&1 || { cat "$logfile"; exit 1; }
 cat "$logfile"
 rg -q DRAWER_NATIVE_OK "$logfile"
-if rg -q 'FAIL!|ERROR|WARN qml|Binding loop|TypeError|Unable to assign|Could not convert|NATIVE_TIMEOUT' "$logfile"; then exit 1; fi
+# Stock Bar.qml (omacom/omarchy#14431) reports this loop on machines without a
+# display-cutouts file, with or without the drawer patch.
+if rg -v 'Binding loop detected for property "displayCutouts"' "$logfile" |
+  rg -q 'FAIL!|ERROR|WARN qml|Binding loop|TypeError|Unable to assign|Could not convert|NATIVE_TIMEOUT'; then exit 1; fi
