@@ -15,8 +15,8 @@ jobs:
       - run: for script in scripts/* integration/*.sh; do bash -n "$script"; done
       - uses: actions/checkout@v4
         with:
-          repository: basecamp/omarchy
-          ref: 82652c8bdba65c05954fe6ebd961d90029250a5d
+          repository: omacom/omarchy
+          ref: f5006bd41a1755d46e0a4f2c0c4c54fca703cd9b
           path: .host
           sparse-checkout-cone-mode: false
           sparse-checkout: |
